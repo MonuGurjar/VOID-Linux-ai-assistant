@@ -86,6 +86,26 @@ select opt in "${options[@]}"; do
 done
 
 echo ""
+echo "Installing Desktop Shortcut..."
+mkdir -p "$HOME/.local/share/applications"
+DESKTOP_FILE="$HOME/.local/share/applications/enma.desktop"
+cp "$INSTALL_DIR/assets/enma.desktop" "$DESKTOP_FILE"
+
+if [[ "$opt" == *"uv"* ]]; then
+    EXEC_CMD="$INSTALL_DIR/.venv/bin/python $INSTALL_DIR/app.py"
+else
+    EXEC_CMD="$INSTALL_DIR/.venv/bin/python $INSTALL_DIR/app.py"
+fi
+ICON_CMD="$INSTALL_DIR/assets/icon.svg"
+
+sed -i "s|{{EXEC_PATH}}|$EXEC_CMD|g" "$DESKTOP_FILE"
+sed -i "s|{{ICON_PATH}}|$ICON_CMD|g" "$DESKTOP_FILE"
+if command -v update-desktop-database &> /dev/null; then
+    update-desktop-database "$HOME/.local/share/applications" || true
+fi
+echo "Shortcut created at $DESKTOP_FILE"
+
+echo ""
 echo "=================================================="
 echo "Installation complete!"
 echo "To run ENMA:"
