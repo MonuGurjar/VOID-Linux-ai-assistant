@@ -2,6 +2,8 @@
 
 ENMA is a local, OS-level automation agent powered by an offline Large Language Model (LLM) and built with PyQt6. It acts as an intelligent assistant capable of executing system-level operations, searching the internet, finding local files, and monitoring hardware health—all from a sleek, premium dark-mode interface.
 
+text to text only
+
 ## Features
 
 - **Local LLM Orchestration**: Fully offline and private brain powered by [Ollama](https://ollama.com/), utilizing structured tool-calling.
@@ -14,7 +16,7 @@ ENMA is a local, OS-level automation agent powered by an offline Large Language 
 
 ## Architecture
 
-The codebase is highly decoupled and modular:
+The codebase:
 
 ```
 enma-agent/
@@ -31,15 +33,15 @@ enma-agent/
 
 ## Prerequisites
 
-- **Garuda Linux** (or any modern Linux distribution)
+- **Arch Linux** (or any modern Linux distribution)
 - **Python 3.11+**
-- **uv** (The extremely fast Python package manager)
-- **Ollama** running locally with your chosen model installed (default is aliased as `ENMA` or you can change `DEFAULT_MODEL` in `config.py` to `llama3` or `qwen2.5-coder:7b`).
+- **uv** (The extremely fast Python package manager) or **pyenv/default python**
+- **Ollama** running locally with your chosen model installed (default is aliased as `lfm2.5` or you can change `DEFAULT_MODEL` in `config.py` to `llama3` or `qwen2.5-coder:7b`).
 
 ## Installation
 
 ### Quick Install (Recommended)
-You can install and setup the ENMA Agent automatically with a single command. The script will clone the repo and let you choose your preferred Python environment manager (`uv`, `mise`, `pyenv`, or standard `python3 venv`):
+Can install and setup the ENMA Agent automatically with a single command. The script will clone the repo and let you choose your preferred Python environment manager (`uv`, `mise`, `pyenv`, or standard `python3 venv`):
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/MonuGurjar/ENMA-Linux-ai-assistant/main/install.sh)"
@@ -72,6 +74,8 @@ Start the GUI application:
 
 ```bash
 uv run python app.py
+or
+python app.py
 ```
 
 ### Example Prompts:
