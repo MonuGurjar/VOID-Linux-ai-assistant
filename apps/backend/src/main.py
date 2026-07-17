@@ -1,5 +1,9 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import logging
+
+from .db import create_db_and_tables
+from .routers import conversations, chat
 
 # Configure Logging
 logging.basicConfig(level=logging.INFO)
@@ -7,10 +11,21 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="VOID Assistant API", version="1.0")
 
+# Setup CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Since it's a local desktop app
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(conversations.router)
+app.include_router(chat.router)
 @app.on_event("startup")
 async def startup_event():
     logger.info("Initializing VOID Backend...")
-    # TODO: Initialize SQLite via SQLModel
+    create_db_and_tables()
     # TODO: Initialize Qdrant Client
 
 @app.get("/")

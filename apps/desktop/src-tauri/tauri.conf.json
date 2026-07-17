@@ -12,9 +12,11 @@
   "app": {
     "windows": [
       {
-        "title": "appsdesktop",
-        "width": 800,
-        "height": 600
+        "title": "VOID Assistant",
+        "width": 1200,
+        "height": 800,
+        "decorations": false,
+        "transparent": true
       }
     ],
     "security": {

@@ -20,7 +20,7 @@ Each phase produces a fully functional milestone before progressing to the next.
 - [x] Architecture
 - [x] Documentation
 - [x] Foundation
-- [ ] Core UI
+- [x] Core UI
 - [ ] Local AI
 - [ ] Tool System
 - [ ] Knowledge Engine
@@ -40,7 +40,7 @@ Each phase produces a fully functional milestone before progressing to the next.
 | Phase | Status | Priority |
 |--------|--------|----------|
 | Phase 0 | ✅ | Critical |
-| Phase 1 | ⏳ | Critical |
+| Phase 1 | ✅ | Critical |
 | Phase 2 | ⏳ | Critical |
 | Phase 3 | ⏳ | Critical |
 | Phase 4 | ⏳ | High |
