@@ -1,9 +1,0 @@
-[Desktop Entry]
-Version=1.0
-Type=Application
-Name=ENMA Agent
-Comment=Evolving Neural Monitoring Agent
-Exec={{EXEC_PATH}}
-Icon={{ICON_PATH}}
-Terminal=false
-Categories=Utility;System;
