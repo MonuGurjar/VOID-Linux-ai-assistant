@@ -83,6 +83,7 @@ export function TitleBar() {
           </span>
         </div>
       </div>
+    </div>
 
       <div className="flex items-center h-full pointer-events-auto">
         <button
