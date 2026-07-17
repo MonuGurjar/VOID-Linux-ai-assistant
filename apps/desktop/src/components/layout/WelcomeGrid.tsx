@@ -49,9 +49,8 @@ export function WelcomeGrid() {
   return (
     <div className="flex flex-col items-center justify-center h-full w-full max-w-3xl mx-auto px-6 animate-in fade-in zoom-in-95 duration-500">
       <div className="flex flex-col items-center mb-12">
-        <div className="w-20 h-20 mb-6 rounded-2xl border-4 border-primary flex items-center justify-center p-3 relative">
-          <div className="absolute -inset-2 rounded-2xl border border-primary/20 border-dashed animate-[spin_10s_linear_infinite]" />
-          <div className="w-8 h-8 bg-primary rounded-lg"></div>
+        <div className="w-20 h-20 mb-6 flex items-center justify-center relative">
+          <img src="/logo-red.png" alt="VOID Logo" className="w-full h-full object-contain" />
         </div>
         <h1 className="text-3xl font-bold mb-3 tracking-tight">
           Welcome to <span className="text-primary">VOID</span>

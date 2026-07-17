@@ -71,7 +71,7 @@ export function ChatPage() {
         navigate(`/chat/${chatId}`, { replace: true });
       }
 
-      // Send message
+      // Send message and get streaming response
       const msgRes = await fetch(`${API_URL}/conversations/${chatId}/messages/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -79,14 +79,57 @@ export function ChatPage() {
       });
       
       if (!msgRes.ok) throw new Error("Failed to get response");
+      if (!msgRes.body) throw new Error("No response body");
+
+      const reader = msgRes.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantMsg: Message = { role: "assistant", content: "", created_at: new Date().toISOString() };
       
-      const assistantMsg = await msgRes.json();
+      // Add empty assistant message to UI
       setMessages((prev) => [...prev, assistantMsg]);
+      setIsLoading(false); // Can hide loader since we are streaming now
+
+      let isDone = false;
+      while (!isDone) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunkText = decoder.decode(value, { stream: true });
+        const lines = chunkText.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.replace('data: ', '').trim();
+            if (dataStr === '[DONE]') {
+              isDone = true;
+              break;
+            }
+            if (!dataStr) continue;
+            
+            try {
+              const data = JSON.parse(dataStr);
+              if (data.error) {
+                 throw new Error(data.error);
+              }
+              if (data.content) {
+                assistantMsg.content += data.content;
+                // Update UI continuously
+                setMessages(prev => {
+                  const newMsgs = [...prev];
+                  newMsgs[newMsgs.length - 1] = { ...assistantMsg };
+                  return newMsgs;
+                });
+              }
+            } catch (e) {
+              console.error("Error parsing stream chunk", e, dataStr);
+            }
+          }
+        }
+      }
       
     } catch (err: any) {
       console.error("Failed to send message", err);
       setError(err.message || "An error occurred");
-    } finally {
       setIsLoading(false);
     }
   };
@@ -223,7 +266,7 @@ export function ChatPage() {
                 <button 
                   onClick={handleSend}
                   disabled={isLoading || !input.trim()}
-                  className="p-2 bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-opacity flex items-center justify-center"
+                  className="p-2.5 bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-opacity flex items-center justify-center"
                 >
                   <SendHorizontal className="w-4 h-4" />
                 </button>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Minus, Square, X, Settings2 } from 'lucide-react';
+import { Minus, Square, X, Settings2, ChevronDown } from 'lucide-react';
 
 export function TitleBar() {
   const [isMaximized, setIsMaximized] = useState(false);
@@ -35,11 +35,12 @@ export function TitleBar() {
       className="h-10 flex justify-between items-center bg-background select-none sticky top-0 z-50 border-b border-border/50"
     >
       <div className="flex items-center px-4 gap-3 pointer-events-none">
-        <div className="w-5 h-5 rounded-md border-2 border-primary flex items-center justify-center">
-          <div className="w-2 h-2 bg-primary rounded-sm"></div>
-        </div>
+        <img src="/logo-red.png" alt="VOID" className="w-6 h-6 object-contain" />
         <div className="flex items-center gap-2 text-sm font-semibold">
-          <span>VOID Assistant</span>
+          <span className="flex items-center gap-1">
+            VOID Assistant
+            <ChevronDown className="w-3 h-3 text-muted-foreground" />
+          </span>
           <span className="text-muted-foreground font-normal text-xs px-2 py-0.5 rounded-full bg-muted flex items-center gap-1.5">
             Gemma 3 12B
             <span className="w-1.5 h-1.5 rounded-full bg-destructive"></span>

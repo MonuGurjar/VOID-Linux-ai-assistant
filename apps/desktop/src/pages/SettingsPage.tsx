@@ -6,7 +6,10 @@ export function SettingsPage() {
     theme: "dark",
     fontSize: "14px",
     dataDir: "~/.void/data",
+    ai_base_url: "http://localhost:11434/v1",
+    ai_model: ""
   });
+  const [models, setModels] = useState<{id: string, name: string}[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   
   const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -20,6 +23,16 @@ export function SettingsPage() {
         }
       })
       .catch(err => console.error("Failed to load settings:", err));
+      
+    fetch(`${API_URL}/ai/models`)
+      .then(res => res.json())
+      .then(data => {
+         setModels(data);
+         if (data.length > 0 && !settings.ai_model) {
+            setSettings(prev => ({ ...prev, ai_model: data[0].id }));
+         }
+      })
+      .catch(err => console.error("Failed to load models:", err));
   }, [API_URL]);
 
   const handleSave = async () => {
@@ -80,6 +93,38 @@ export function SettingsPage() {
                 <option value="12px">Small</option>
                 <option value="14px">Medium</option>
                 <option value="16px">Large</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold border-b border-border/50 pb-2">Local AI Integration</h2>
+          
+          <div className="grid gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium">Base URL</label>
+              <input 
+                type="text" 
+                value={settings.ai_base_url || ""}
+                onChange={e => setSettings({...settings, ai_base_url: e.target.value})}
+                placeholder="http://localhost:11434/v1"
+                className="w-full bg-background border border-border/50 rounded-lg p-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary/50"
+              />
+              <p className="text-xs text-muted-foreground">Ollama: http://localhost:11434/v1 | LM Studio: http://localhost:1234/v1</p>
+            </div>
+            
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium">Model</label>
+              <select 
+                value={settings.ai_model || ""}
+                onChange={e => setSettings({...settings, ai_model: e.target.value})}
+                className="w-full bg-background border border-border/50 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+              >
+                <option value="" disabled>Select a model</option>
+                {models.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
               </select>
             </div>
           </div>
