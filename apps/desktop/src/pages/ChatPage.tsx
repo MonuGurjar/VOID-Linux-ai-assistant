@@ -21,6 +21,11 @@ export function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Model settings state
+  const [models, setModels] = useState<{id: string, name: string}[]>([]);
+  const [activeModel, setActiveModel] = useState<string>("");
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
@@ -35,6 +40,34 @@ export function ChatPage() {
       setMessages([]);
     }
   }, [id, API_URL]);
+
+  // Fetch AI settings and models
+  useEffect(() => {
+    fetch(`${API_URL}/ai/models`)
+      .then(res => res.json())
+      .then(data => setModels(data))
+      .catch(err => console.error("Failed to load models:", err));
+
+    fetch(`${API_URL}/settings/`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.ai_model) setActiveModel(data.ai_model);
+      })
+      .catch(err => console.error("Failed to load settings:", err));
+  }, [API_URL]);
+
+  const handleModelChange = async (newModel: string) => {
+    setActiveModel(newModel);
+    try {
+      await fetch(`${API_URL}/settings/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ai_model: newModel })
+      });
+    } catch (err) {
+      console.error("Failed to update model setting", err);
+    }
+  };
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -259,10 +292,19 @@ export function ChatPage() {
               </div>
               
               <div className="flex items-center gap-2">
-                <button className="px-3 py-1.5 flex items-center gap-2 text-xs font-medium text-foreground border border-border/50 hover:bg-muted rounded-lg transition-colors">
-                  Gemma 3 12B
-                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-                </button>
+                <div className="relative flex items-center">
+                  <select 
+                    value={activeModel}
+                    onChange={(e) => handleModelChange(e.target.value)}
+                    className="appearance-none px-3 py-1.5 pr-8 flex items-center gap-2 text-xs font-medium text-foreground bg-transparent border border-border/50 hover:bg-muted rounded-lg transition-colors cursor-pointer outline-none focus:ring-1 focus:ring-primary/50"
+                  >
+                    <option value="" disabled>Select Model</option>
+                    {models.map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
+                </div>
                 <button 
                   onClick={handleSend}
                   disabled={isLoading || !input.trim()}

@@ -4,6 +4,8 @@ import { Minus, Square, X, Settings2, ChevronDown } from 'lucide-react';
 
 export function TitleBar() {
   const [isMaximized, setIsMaximized] = useState(false);
+  const [modelName, setModelName] = useState("Loading...");
+  const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
   useEffect(() => {
     const checkMaximized = async () => {
@@ -14,7 +16,28 @@ export function TitleBar() {
     // Tauri has event listeners but we can also check on mount and interval
     // For simplicity, we just check on mount. In a robust setup we'd listen to 'tauri://resize'
     checkMaximized();
-  }, []);
+
+    const fetchSettings = () => {
+      fetch(`${API_URL}/settings/`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.ai_model) {
+            setModelName(data.ai_model);
+          } else {
+            setModelName("No model selected");
+          }
+        })
+        .catch(err => {
+          console.error("Failed to load settings:", err);
+          setModelName("Disconnected");
+        });
+    };
+    
+    fetchSettings();
+    // Poll settings every few seconds in case it changes
+    const interval = setInterval(fetchSettings, 5000);
+    return () => clearInterval(interval);
+  }, [API_URL]);
 
   const handleMinimize = () => getCurrentWindow().minimize();
   const handleMaximize = async () => {
@@ -41,9 +64,9 @@ export function TitleBar() {
             VOID Assistant
             <ChevronDown className="w-3 h-3 text-muted-foreground" />
           </span>
-          <span className="text-muted-foreground font-normal text-xs px-2 py-0.5 rounded-full bg-muted flex items-center gap-1.5">
-            Gemma 3 12B
-            <span className="w-1.5 h-1.5 rounded-full bg-destructive"></span>
+          <span className="text-muted-foreground font-normal text-xs px-2 py-0.5 rounded-full bg-muted flex items-center gap-1.5 pointer-events-auto">
+            {modelName}
+            <span className={`w-1.5 h-1.5 rounded-full ${modelName === 'Disconnected' ? 'bg-destructive' : 'bg-green-500'}`}></span>
           </span>
         </div>
       </div>
