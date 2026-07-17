@@ -1,5 +1,6 @@
-import { Link } from "react-router";
-import { Plus, Settings, MessageSquare, Hexagon, Search, PanelLeftClose, Star, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router";
+import { Plus, Settings, MessageSquare, Search, PanelLeftClose, ChevronDown, MoreHorizontal, Pencil, Trash2, Check, X } from "lucide-react";
 
 import {
   Sidebar,
@@ -14,15 +15,91 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+interface Conversation {
+  id: number;
+  title: string;
+  updated_at: string;
+}
+
 export function AppSidebar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [search, setSearch] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  
+  const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+  const fetchConversations = () => {
+    fetch(`${API_URL}/conversations/`)
+      .then(res => res.json())
+      .then(data => setConversations(data))
+      .catch(err => console.error(err));
+  };
+
+  useEffect(() => {
+    fetchConversations();
+    // Simple polling for now to keep sidebar synced
+    const interval = setInterval(fetchConversations, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleDelete = async (id: number) => {
+    await fetch(`${API_URL}/conversations/${id}`, { method: "DELETE" });
+    fetchConversations();
+    if (location.pathname === `/chat/${id}`) {
+      navigate("/");
+    }
+  };
+
+  const handleRename = async (id: number) => {
+    if (!editTitle.trim()) {
+      setEditingId(null);
+      return;
+    }
+    await fetch(`${API_URL}/conversations/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: editTitle.trim() })
+    });
+    setEditingId(null);
+    fetchConversations();
+  };
+
+  const filtered = conversations.filter(c => c.title.toLowerCase().includes(search.toLowerCase()));
+
+  // Setup keyboard shortcut for new chat
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const searchInput = document.getElementById('conversation-search');
+        if (searchInput) searchInput.focus();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        navigate("/");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [navigate]);
+
   return (
     <Sidebar className="border-r border-border/50 bg-sidebar/50">
       <SidebarHeader className="p-4 flex flex-col gap-4">
         {/* Logo and Title */}
         <div className="flex items-center gap-3 px-2">
-          <div className="relative flex items-center justify-center text-primary">
-            <Hexagon className="w-8 h-8" strokeWidth={1.5} />
-            <div className="absolute w-3 h-3 bg-primary rounded-sm rotate-45" />
+          <div className="relative flex items-center justify-center">
+            <img src="/logo-red.png" alt="VOID Logo" className="w-8 h-8 object-contain" />
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-base leading-tight text-primary">VOID</span>
@@ -48,8 +125,11 @@ export function AppSidebar() {
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input 
+            id="conversation-search"
             type="text" 
             placeholder="Search conversations..." 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-background border border-border/50 rounded-lg py-1.5 pl-9 pr-12 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
           />
           <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
@@ -59,76 +139,71 @@ export function AppSidebar() {
       </SidebarHeader>
       
       <SidebarContent className="px-2">
-        {/* Today Group */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-normal text-muted-foreground">Today</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-xs font-normal text-muted-foreground">Recent</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton isActive className="bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary">
-                  <MessageSquare className="w-4 h-4" />
-                  <span className="truncate">Welcome to VOID</span>
-                  <span className="ml-auto text-[10px] opacity-70">10:30 AM</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <MessageSquare className="w-4 h-4" />
-                  <span className="truncate">Linux Commands Help</span>
-                  <span className="ml-auto text-[10px] text-muted-foreground">09:15 AM</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <MessageSquare className="w-4 h-4" />
-                  <span className="truncate">Docker Issue Debugging</span>
-                  <span className="ml-auto text-[10px] text-muted-foreground">08:45 AM</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Yesterday Group */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-normal text-muted-foreground">Yesterday</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <MessageSquare className="w-4 h-4" />
-                  <span className="truncate">Python Script Review</span>
-                  <span className="ml-auto text-[10px] text-muted-foreground">Yesterday</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <MessageSquare className="w-4 h-4" />
-                  <span className="truncate">RAG Architecture Overview</span>
-                  <span className="ml-auto text-[10px] text-muted-foreground">Yesterday</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Pinned Group */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-normal text-muted-foreground">Pinned</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                  <span className="truncate">Project Docs</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                  <span className="truncate">Research Notes</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {filtered.map(c => {
+                const isActive = location.pathname === `/chat/${c.id}`;
+                const isEditing = editingId === c.id;
+                return (
+                  <SidebarMenuItem key={c.id}>
+                    <SidebarMenuButton 
+                      isActive={isActive} 
+                      onClick={() => !isEditing && navigate(`/chat/${c.id}`)}
+                      className={`group relative ${isActive ? "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary" : ""}`}
+                    >
+                      <MessageSquare className="w-4 h-4 min-w-4" />
+                      {isEditing ? (
+                        <div className="flex items-center gap-1 w-full" onClick={e => e.stopPropagation()}>
+                          <input 
+                            autoFocus
+                            type="text" 
+                            className="flex-1 bg-background border border-border px-1 text-sm rounded outline-none" 
+                            value={editTitle}
+                            onChange={e => setEditTitle(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleRename(c.id);
+                              if (e.key === 'Escape') setEditingId(null);
+                            }}
+                          />
+                          <button onClick={() => handleRename(c.id)} className="text-green-500 hover:text-green-400">
+                            <Check className="w-3 h-3" />
+                          </button>
+                          <button onClick={() => setEditingId(null)} className="text-red-500 hover:text-red-400">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="truncate pr-4">{c.title}</span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger 
+                              className="absolute right-2 p-1 rounded hover:bg-secondary/80 opacity-0 group-hover:opacity-100 transition-opacity" 
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="w-3.5 h-3.5" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40 border-border/50">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingId(c.id); setEditTitle(c.title); }}>
+                                <Pencil className="w-4 h-4 mr-2" /> Rename
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(c.id); }}>
+                                <Trash2 className="w-4 h-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+              {filtered.length === 0 && (
+                <div className="text-center py-4 text-xs text-muted-foreground">
+                  No conversations found.
+                </div>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

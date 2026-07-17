@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 
 from .db import create_db_and_tables
-from .routers import conversations, chat
+from .routers import conversations, chat, settings
 
 # Configure Logging
 logging.basicConfig(level=logging.INFO)
@@ -22,6 +22,7 @@ app.add_middleware(
 
 app.include_router(conversations.router)
 app.include_router(chat.router)
+app.include_router(settings.router)
 @app.on_event("startup")
 async def startup_event():
     logger.info("Initializing VOID Backend...")

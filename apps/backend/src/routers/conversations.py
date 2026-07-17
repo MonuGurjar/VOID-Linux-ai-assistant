@@ -2,7 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from typing import List
 from ..db import get_session
+from pydantic import BaseModel
 from ..models.chat import Conversation, Message
+
+class ConversationUpdate(BaseModel):
+    title: str
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
@@ -32,3 +36,15 @@ def delete_conversation(conversation_id: int, session: Session = Depends(get_ses
     session.delete(conversation)
     session.commit()
     return {"ok": True}
+
+@router.patch("/{conversation_id}")
+def rename_conversation(conversation_id: int, update_data: ConversationUpdate, session: Session = Depends(get_session)):
+    conversation = session.get(Conversation, conversation_id)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    conversation.title = update_data.title
+    session.add(conversation)
+    session.commit()
+    session.refresh(conversation)
+    return conversation

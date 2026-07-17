@@ -11,6 +11,7 @@ interface Message {
   id?: number;
   role: "user" | "assistant";
   content: string;
+  created_at?: string;
 }
 
 export function ChatPage() {
@@ -19,6 +20,7 @@ export function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
@@ -62,6 +64,7 @@ export function ChatPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: userMessage.slice(0, 30) + "..." }),
         });
+        if (!createRes.ok) throw new Error("Failed to create conversation");
         const chatData = await createRes.json();
         chatId = chatData.id;
         // Update URL silently so refresh keeps us in this chat
@@ -75,11 +78,14 @@ export function ChatPage() {
         body: JSON.stringify({ role: "user", content: userMessage }),
       });
       
+      if (!msgRes.ok) throw new Error("Failed to get response");
+      
       const assistantMsg = await msgRes.json();
       setMessages((prev) => [...prev, assistantMsg]);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to send message", err);
+      setError(err.message || "An error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +113,7 @@ export function ChatPage() {
                 }`}
               >
                 <div
-                  className={`max-w-[85%] rounded-2xl px-5 py-3.5 shadow-sm ${
+                  className={`max-w-[85%] rounded-2xl px-5 py-3.5 shadow-sm relative group ${
                     msg.role === "user"
                       ? "bg-secondary text-foreground"
                       : "bg-transparent text-foreground"
@@ -117,14 +123,69 @@ export function ChatPage() {
                     <div className="whitespace-pre-wrap">{msg.content}</div>
                   ) : (
                     <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
+                      <ReactMarkdown 
+                        rehypePlugins={[rehypeHighlight]}
+                        components={{
+                          code({node, className, children, ...props}) {
+                            const match = /language-(\w+)/.exec(className || '');
+                            return match ? (
+                              <div className="relative group/code rounded-md overflow-hidden my-4 border border-border/50">
+                                <div className="flex items-center justify-between px-3 py-1.5 bg-secondary text-xs text-muted-foreground border-b border-border/50">
+                                  <span>{match[1]}</span>
+                                  <button 
+                                    onClick={() => navigator.clipboard.writeText(String(children).replace(/\n$/, ''))}
+                                    className="hover:text-foreground transition-colors"
+                                  >
+                                    Copy Code
+                                  </button>
+                                </div>
+                                <code className={className} {...props}>
+                                  {children}
+                                </code>
+                              </div>
+                            ) : (
+                              <code className={`${className} bg-secondary/50 rounded px-1.5 py-0.5 text-primary`} {...props}>
+                                {children}
+                              </code>
+                            );
+                          }
+                        }}
+                      >
                         {msg.content}
                       </ReactMarkdown>
+                    </div>
+                  )}
+                  {msg.created_at && (
+                    <div className={`text-[10px] text-muted-foreground mt-2 ${msg.role === "user" ? "text-right" : "text-left"}`}>
+                      {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                     </div>
                   )}
                 </div>
               </div>
             ))}
+            
+            {isLoading && (
+              <div className="flex items-start">
+                <div className="bg-transparent text-foreground max-w-[85%] rounded-2xl px-5 py-3.5">
+                  <div className="flex items-center gap-1.5 h-6">
+                    <div className="w-2 h-2 rounded-full bg-primary/50 animate-bounce" />
+                    <div className="w-2 h-2 rounded-full bg-primary/50 animate-bounce [animation-delay:0.2s]" />
+                    <div className="w-2 h-2 rounded-full bg-primary/50 animate-bounce [animation-delay:0.4s]" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="flex items-center justify-center p-4">
+                <div className="bg-destructive/10 text-destructive border border-destructive/20 rounded-lg px-4 py-3 text-sm flex items-center justify-between w-full max-w-md">
+                  <span>{error}</span>
+                  <button onClick={() => setError(null)} className="text-destructive hover:opacity-70">
+                    <Plus className="w-4 h-4 rotate-45" />
+                  </button>
+                </div>
+              </div>
+            )}
             <div ref={scrollRef} />
           </div>
         )}
