@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Minus, Square, X, Settings2, ChevronDown } from 'lucide-react';
+import { useSidebar } from '@/components/ui/sidebar';
+import { PanelLeft } from 'lucide-react';
 
 export function TitleBar() {
+  const navigate = useNavigate();
+  const { toggleSidebar, state } = useSidebar();
   const [isMaximized, setIsMaximized] = useState(false);
   const [modelName, setModelName] = useState("Loading...");
   const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -57,13 +62,21 @@ export function TitleBar() {
       data-tauri-drag-region
       className="h-10 flex justify-between items-center bg-background select-none sticky top-0 z-50 border-b border-border/50"
     >
-      <div className="flex items-center px-4 gap-3 pointer-events-none">
-        <img src="/logo-red.png" alt="VOID" className="w-6 h-6 object-contain" />
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <span className="flex items-center gap-1">
-            VOID Assistant
-            <ChevronDown className="w-3 h-3 text-muted-foreground" />
-          </span>
+      <div className="flex items-center h-full gap-2 pointer-events-auto">
+        <button
+          onClick={toggleSidebar}
+          className="h-full px-4 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center"
+          title="Toggle Sidebar"
+        >
+          <PanelLeft className="w-4 h-4" />
+        </button>
+        <div className="flex items-center gap-3 px-2 pointer-events-none">
+          <img src="/logo-red.png" alt="VOID" className="w-6 h-6 object-contain" />
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <span className="flex items-center gap-1">
+              VOID Assistant
+              <ChevronDown className="w-3 h-3 text-muted-foreground" />
+            </span>
           <span className="text-muted-foreground font-normal text-xs px-2 py-0.5 rounded-full bg-muted flex items-center gap-1.5 pointer-events-auto">
             {modelName}
             <span className={`w-1.5 h-1.5 rounded-full ${modelName === 'Disconnected' ? 'bg-destructive' : 'bg-green-500'}`}></span>
@@ -71,8 +84,9 @@ export function TitleBar() {
         </div>
       </div>
 
-      <div className="flex items-center h-full">
+      <div className="flex items-center h-full pointer-events-auto">
         <button
+          onClick={() => navigate('/settings')}
           className="h-full px-4 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center"
           title="Settings"
         >

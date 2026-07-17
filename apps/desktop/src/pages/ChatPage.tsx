@@ -25,6 +25,7 @@ export function ChatPage() {
   // Model settings state
   const [models, setModels] = useState<{id: string, name: string}[]>([]);
   const [activeModel, setActiveModel] = useState<string>("");
+  const [activeProvider, setActiveProvider] = useState<string>("ollama");
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -42,19 +43,47 @@ export function ChatPage() {
   }, [id, API_URL]);
 
   // Fetch AI settings and models
+  const fetchModels = async () => {
+    try {
+      const res = await fetch(`${API_URL}/ai/models`);
+      const data = await res.json();
+      setModels(data);
+    } catch(err) {
+      console.error("Failed to load models:", err);
+    }
+  };
+
   useEffect(() => {
-    fetch(`${API_URL}/ai/models`)
-      .then(res => res.json())
-      .then(data => setModels(data))
-      .catch(err => console.error("Failed to load models:", err));
+    fetchModels();
 
     fetch(`${API_URL}/settings/`)
       .then(res => res.json())
       .then(data => {
         if (data.ai_model) setActiveModel(data.ai_model);
+        if (data.ai_base_url?.includes("1234")) {
+          setActiveProvider("lmstudio");
+        } else {
+          setActiveProvider("ollama");
+        }
       })
       .catch(err => console.error("Failed to load settings:", err));
   }, [API_URL]);
+
+  const handleProviderChange = async (provider: string) => {
+    setActiveProvider(provider);
+    const newUrl = provider === "lmstudio" ? "http://localhost:1234/v1" : "http://localhost:11434/v1";
+    try {
+      await fetch(`${API_URL}/settings/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ai_base_url: newUrl, ai_model: "" }) // reset model
+      });
+      setActiveModel("");
+      fetchModels(); // Refetch models from new provider
+    } catch (err) {
+      console.error("Failed to switch provider", err);
+    }
+  };
 
   const handleModelChange = async (newModel: string) => {
     setActiveModel(newModel);
@@ -159,10 +188,22 @@ export function ChatPage() {
           }
         }
       }
+
+      // If stream finished and message is still empty, remove it (e.g. error)
+      if (!assistantMsg.content) {
+        setMessages(prev => prev.slice(0, -1));
+      }
       
     } catch (err: any) {
       console.error("Failed to send message", err);
       setError(err.message || "An error occurred");
+      // Remove empty ghost message if error occurred
+      setMessages(prev => {
+        if (prev.length > 0 && prev[prev.length - 1].role === "assistant" && !prev[prev.length - 1].content) {
+          return prev.slice(0, -1);
+        }
+        return prev;
+      });
       setIsLoading(false);
     }
   };
@@ -198,37 +239,45 @@ export function ChatPage() {
                   {msg.role === "user" ? (
                     <div className="whitespace-pre-wrap">{msg.content}</div>
                   ) : (
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown 
-                        rehypePlugins={[rehypeHighlight]}
-                        components={{
-                          code({node, className, children, ...props}) {
-                            const match = /language-(\w+)/.exec(className || '');
-                            return match ? (
-                              <div className="relative group/code rounded-md overflow-hidden my-4 border border-border/50">
-                                <div className="flex items-center justify-between px-3 py-1.5 bg-secondary text-xs text-muted-foreground border-b border-border/50">
-                                  <span>{match[1]}</span>
-                                  <button 
-                                    onClick={() => navigator.clipboard.writeText(String(children).replace(/\n$/, ''))}
-                                    className="hover:text-foreground transition-colors"
-                                  >
-                                    Copy Code
-                                  </button>
+                    <div className="prose prose-sm dark:prose-invert max-w-none min-h-6">
+                      {msg.content === "" ? (
+                        <div className="flex items-center gap-1.5 h-6">
+                          <div className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-bounce" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-bounce [animation-delay:0.2s]" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-bounce [animation-delay:0.4s]" />
+                        </div>
+                      ) : (
+                        <ReactMarkdown 
+                          rehypePlugins={[rehypeHighlight]}
+                          components={{
+                            code({node, className, children, ...props}) {
+                              const match = /language-(\w+)/.exec(className || '');
+                              return match ? (
+                                <div className="relative group/code rounded-md overflow-hidden my-4 border border-border/50">
+                                  <div className="flex items-center justify-between px-3 py-1.5 bg-secondary text-xs text-muted-foreground border-b border-border/50">
+                                    <span>{match[1]}</span>
+                                    <button 
+                                      onClick={() => navigator.clipboard.writeText(String(children).replace(/\n$/, ''))}
+                                      className="hover:text-foreground transition-colors"
+                                    >
+                                      Copy Code
+                                    </button>
+                                  </div>
+                                  <code className={className} {...props}>
+                                    {children}
+                                  </code>
                                 </div>
-                                <code className={className} {...props}>
+                              ) : (
+                                <code className={`${className} bg-secondary/50 rounded px-1.5 py-0.5 text-primary`} {...props}>
                                   {children}
                                 </code>
-                              </div>
-                            ) : (
-                              <code className={`${className} bg-secondary/50 rounded px-1.5 py-0.5 text-primary`} {...props}>
-                                {children}
-                              </code>
-                            );
-                          }
-                        }}
-                      >
-                        {msg.content}
-                      </ReactMarkdown>
+                              );
+                            }
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+                      )}
                     </div>
                   )}
                   {msg.created_at && (
@@ -292,6 +341,24 @@ export function ChatPage() {
               </div>
               
               <div className="flex items-center gap-2">
+                <div className="relative flex items-center bg-muted/50 rounded-lg p-0.5 border border-border/50">
+                  <button
+                    onClick={() => handleProviderChange("ollama")}
+                    className={`px-3 py-1 text-[10px] font-medium rounded-md transition-colors ${
+                      activeProvider === "ollama" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Ollama
+                  </button>
+                  <button
+                    onClick={() => handleProviderChange("lmstudio")}
+                    className={`px-3 py-1 text-[10px] font-medium rounded-md transition-colors ${
+                      activeProvider === "lmstudio" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    LM Studio
+                  </button>
+                </div>
                 <div className="relative flex items-center">
                   <select 
                     value={activeModel}
