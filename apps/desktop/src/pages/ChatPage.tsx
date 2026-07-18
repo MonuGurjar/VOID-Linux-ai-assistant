@@ -35,7 +35,10 @@ export function ChatPage() {
     if (id) {
       fetch(`${API_URL}/conversations/${id}/messages`)
         .then((res) => res.json())
-        .then((data) => setMessages(data))
+        .then((data: Message[]) => {
+           // Filter out empty ghost messages from history
+           setMessages(data.filter(m => m.content !== "" || m.role === "user"));
+        })
         .catch((err) => console.error("Failed to load messages", err));
     } else {
       setMessages([]);
@@ -221,7 +224,7 @@ export function ChatPage() {
         {messages.length === 0 ? (
           <WelcomeGrid />
         ) : (
-          <div className="max-w-4xl mx-auto space-y-6 p-4 lg:p-8 pb-32">
+          <div className="max-w-4xl mx-auto space-y-6 p-4 lg:p-8 pb-4">
             {messages.map((msg, i) => (
               <div
                 key={i}
@@ -316,8 +319,8 @@ export function ChatPage() {
         )}
       </ScrollArea>
 
-      <div className="absolute bottom-4 left-0 right-0 px-4 md:px-8 pointer-events-none">
-        <div className="max-w-4xl mx-auto relative pointer-events-auto">
+      <div className="px-4 md:px-8 pb-4 pt-2 shrink-0">
+        <div className="max-w-4xl mx-auto relative">
           <div className="flex flex-col w-full rounded-2xl border border-border/60 bg-card shadow-lg focus-within:border-border/80 focus-within:ring-1 focus-within:ring-border transition-all">
             <textarea
               value={input}
