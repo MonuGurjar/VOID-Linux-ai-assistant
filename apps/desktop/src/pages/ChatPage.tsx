@@ -219,7 +219,7 @@ export function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-background relative">
+    <div className="flex flex-col h-full bg-transparent relative">
       <ScrollArea className="flex-1">
         {messages.length === 0 ? (
           <WelcomeGrid />
@@ -233,9 +233,9 @@ export function ChatPage() {
                 }`}
               >
                 <div
-                  className={`max-w-[85%] rounded-2xl px-5 py-3.5 shadow-sm relative group ${
+                  className={`max-w-[85%] rounded-2xl px-5 py-3.5 relative group ${
                     msg.role === "user"
-                      ? "bg-secondary text-foreground"
+                      ? "btn-3d-primary font-medium text-white shadow-lg"
                       : "bg-transparent text-foreground"
                   }`}
                 >
@@ -245,9 +245,9 @@ export function ChatPage() {
                     <div className="prose prose-sm dark:prose-invert max-w-none min-h-6">
                       {msg.content === "" ? (
                         <div className="flex items-center gap-1.5 h-6">
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-bounce" />
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-bounce [animation-delay:0.2s]" />
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-bounce [animation-delay:0.4s]" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-bounce glow-red-3d" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-bounce [animation-delay:0.2s] glow-red-3d" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-bounce [animation-delay:0.4s] glow-red-3d" />
                         </div>
                       ) : (
                         <ReactMarkdown 
@@ -256,12 +256,12 @@ export function ChatPage() {
                             code({node, className, children, ...props}) {
                               const match = /language-(\w+)/.exec(className || '');
                               return match ? (
-                                <div className="relative group/code rounded-md overflow-hidden my-4 border border-border/50">
-                                  <div className="flex items-center justify-between px-3 py-1.5 bg-secondary text-xs text-muted-foreground border-b border-border/50">
-                                    <span>{match[1]}</span>
+                                <div className="relative group/code rounded-xl overflow-hidden my-4 inset-3d border border-white/10 shadow-inner">
+                                  <div className="flex items-center justify-between px-3.5 py-2 bg-white/5 text-xs text-muted-foreground border-b border-white/10 font-mono">
+                                    <span className="font-semibold text-red-400">{match[1]}</span>
                                     <button 
                                       onClick={() => navigator.clipboard.writeText(String(children).replace(/\n$/, ''))}
-                                      className="hover:text-foreground transition-colors"
+                                      className="hover:text-foreground transition-colors btn-3d-secondary px-2 py-0.5 rounded text-[10px]"
                                     >
                                       Copy Code
                                     </button>
@@ -271,7 +271,7 @@ export function ChatPage() {
                                   </code>
                                 </div>
                               ) : (
-                                <code className={`${className} bg-secondary/50 rounded px-1.5 py-0.5 text-primary`} {...props}>
+                                <code className={`${className} bg-white/10 rounded-md px-1.5 py-0.5 text-red-400 font-mono text-xs`} {...props}>
                                   {children}
                                 </code>
                               );
@@ -284,7 +284,7 @@ export function ChatPage() {
                     </div>
                   )}
                   {msg.created_at && (
-                    <div className={`text-[10px] text-muted-foreground mt-2 ${msg.role === "user" ? "text-right" : "text-left"}`}>
+                    <div className={`text-[10px] text-muted-foreground/80 mt-2 ${msg.role === "user" ? "text-right text-white/80" : "text-left"}`}>
                       {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                     </div>
                   )}
@@ -296,9 +296,9 @@ export function ChatPage() {
               <div className="flex items-start">
                 <div className="bg-transparent text-foreground max-w-[85%] rounded-2xl px-5 py-3.5">
                   <div className="flex items-center gap-1.5 h-6">
-                    <div className="w-2 h-2 rounded-full bg-primary/50 animate-bounce" />
-                    <div className="w-2 h-2 rounded-full bg-primary/50 animate-bounce [animation-delay:0.2s]" />
-                    <div className="w-2 h-2 rounded-full bg-primary/50 animate-bounce [animation-delay:0.4s]" />
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-bounce glow-red-3d" />
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-bounce [animation-delay:0.2s] glow-red-3d" />
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-bounce [animation-delay:0.4s] glow-red-3d" />
                   </div>
                 </div>
               </div>
@@ -306,9 +306,9 @@ export function ChatPage() {
 
             {error && (
               <div className="flex items-center justify-center p-4">
-                <div className="bg-destructive/10 text-destructive border border-destructive/20 rounded-lg px-4 py-3 text-sm flex items-center justify-between w-full max-w-md">
+                <div className="bg-rose-500/10 text-rose-400 border border-rose-500/30 rounded-xl px-4 py-3 text-xs font-semibold flex items-center justify-between w-full max-w-md shadow-lg backdrop-blur-md">
                   <span>{error}</span>
-                  <button onClick={() => setError(null)} className="text-destructive hover:opacity-70">
+                  <button onClick={() => setError(null)} className="text-rose-400 hover:text-white transition-colors">
                     <Plus className="w-4 h-4 rotate-45" />
                   </button>
                 </div>
@@ -321,42 +321,42 @@ export function ChatPage() {
 
       <div className="px-4 md:px-8 pb-4 pt-2 shrink-0">
         <div className="max-w-4xl mx-auto relative">
-          <div className="flex flex-col w-full rounded-2xl border border-border/60 bg-card shadow-lg focus-within:border-border/80 focus-within:ring-1 focus-within:ring-border transition-all">
+          <div className="flex flex-col w-full rounded-2xl glass-panel-3d shadow-2xl transition-all border border-white/15">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type a message..."
-              className="flex min-h-[60px] max-h-[40vh] w-full bg-transparent px-4 py-4 text-sm outline-none resize-none placeholder:text-muted-foreground"
+              className="flex min-h-[60px] max-h-[40vh] w-full bg-transparent px-4 py-4 text-sm outline-none resize-none placeholder:text-muted-foreground/60 text-foreground"
               rows={1}
             />
-            <div className="flex items-center justify-between p-2 pt-0">
+            <div className="flex items-center justify-between p-2.5 pt-0">
               <div className="flex items-center gap-1.5">
-                <button className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
+                <button className="p-2 text-muted-foreground hover:text-foreground btn-3d-secondary rounded-xl transition-all">
                   <Plus className="w-4 h-4" />
                 </button>
-                <button className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
+                <button className="p-2 text-muted-foreground hover:text-foreground btn-3d-secondary rounded-xl transition-all">
                   <Paperclip className="w-4 h-4" />
                 </button>
-                <button className="px-3 py-1.5 flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground border border-border/50 hover:bg-muted rounded-lg transition-colors">
+                <button className="px-3 py-1.5 flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground btn-3d-secondary rounded-xl transition-all">
                   @ Tools
                 </button>
               </div>
               
               <div className="flex items-center gap-2">
-                <div className="relative flex items-center bg-muted/50 rounded-lg p-0.5 border border-border/50">
+                <div className="relative flex items-center inset-3d rounded-xl p-1">
                   <button
                     onClick={() => handleProviderChange("ollama")}
-                    className={`px-3 py-1 text-[10px] font-medium rounded-md transition-colors ${
-                      activeProvider === "ollama" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                      activeProvider === "ollama" ? "btn-3d-primary text-white shadow-md" : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     Ollama
                   </button>
                   <button
                     onClick={() => handleProviderChange("lmstudio")}
-                    className={`px-3 py-1 text-[10px] font-medium rounded-md transition-colors ${
-                      activeProvider === "lmstudio" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                      activeProvider === "lmstudio" ? "btn-3d-primary text-white shadow-md" : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     LM Studio
@@ -366,19 +366,19 @@ export function ChatPage() {
                   <select 
                     value={activeModel}
                     onChange={(e) => handleModelChange(e.target.value)}
-                    className="appearance-none px-3 py-1.5 pr-8 flex items-center gap-2 text-xs font-medium text-foreground bg-transparent border border-border/50 hover:bg-muted rounded-lg transition-colors cursor-pointer outline-none focus:ring-1 focus:ring-primary/50"
+                    className="appearance-none px-3 py-1.5 pr-8 flex items-center gap-2 text-xs font-semibold text-foreground btn-3d-secondary rounded-xl cursor-pointer outline-none max-w-[200px] truncate"
                   >
-                    <option value="" disabled>Select Model</option>
+                    <option value="" disabled className="bg-neutral-900">Select Model</option>
                     {models.map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
+                      <option key={m.id} value={m.id} className="bg-neutral-900">{m.name}</option>
                     ))}
                   </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2 pointer-events-none" />
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 pointer-events-none" />
                 </div>
                 <button 
                   onClick={handleSend}
                   disabled={isLoading || !input.trim()}
-                  className="p-2.5 bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-opacity flex items-center justify-center"
+                  className="p-2.5 btn-3d-primary disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all flex items-center justify-center shadow-lg"
                 >
                   <SendHorizontal className="w-4 h-4" />
                 </button>

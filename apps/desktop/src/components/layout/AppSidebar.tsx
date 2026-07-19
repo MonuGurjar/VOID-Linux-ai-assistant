@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router";
+import { VoidLogo } from "@/components/ui/VoidLogo";
 import {
   Plus,
   Settings,
@@ -251,29 +252,28 @@ export function AppSidebar() {
   const hasResults = filtered.length > 0 || !search;
 
   return (
-    <Sidebar className="border-r border-border/50 bg-sidebar/50">
+    <Sidebar className="border-r border-white/10 glass-panel-3d shadow-2xl">
       <SidebarHeader className="p-4 flex flex-col gap-4">
         <div className="flex items-center gap-3 px-2">
-          <div className="relative flex items-center justify-center">
-            <img src="/logo-red.png" alt="VOID Logo" className="w-8 h-8 object-contain" />
-          </div>
+          <VoidLogo className="w-8 h-8" />
           <div className="flex flex-col">
-            <span className="font-bold text-base leading-tight text-primary">VOID</span>
-            <span className="text-xs text-muted-foreground">AI Assistant</span>
+            <span className="font-extrabold text-base leading-tight text-white tracking-wider">VOID</span>
+            <span className="text-[11px] text-muted-foreground font-medium">AI Assistant</span>
           </div>
         </div>
 
         <div className="flex gap-2">
           <Link
             to="/"
-            className="flex-1 flex items-center justify-center gap-2 bg-secondary/50 hover:bg-secondary border border-border/50 rounded-lg text-sm font-medium py-2 transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 btn-3d-primary rounded-xl text-xs font-semibold py-2.5 shadow-lg"
           >
-            <Plus className="w-4 h-4 text-primary" />
+            <Plus className="w-4 h-4 text-white" />
             New Chat
           </Link>
           <button
             onClick={toggleSidebar}
-            className="p-2 bg-secondary/50 hover:bg-secondary border border-border/50 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+            className="p-2.5 btn-3d-secondary rounded-xl text-muted-foreground hover:text-foreground shadow"
+            title="Collapse Sidebar"
           >
             <PanelLeftClose className="w-4 h-4" />
           </button>
@@ -287,9 +287,9 @@ export function AppSidebar() {
             placeholder="Search conversations..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-background border border-border/50 rounded-lg py-1.5 pl-9 pr-12 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+            className="w-full inset-3d rounded-xl py-2 pl-9 pr-12 text-xs focus:outline-none text-foreground placeholder:text-muted-foreground/70"
           />
-          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-semibold text-muted-foreground/70 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded shadow-inner">
             Ctrl K
           </kbd>
         </div>
@@ -298,7 +298,7 @@ export function AppSidebar() {
       <SidebarContent className="px-2">
         {grouped.today.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel className="text-xs font-normal text-muted-foreground">
+            <SidebarGroupLabel className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/60">
               Today
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -309,7 +309,7 @@ export function AppSidebar() {
 
         {grouped.yesterday.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel className="text-xs font-normal text-muted-foreground">
+            <SidebarGroupLabel className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/60">
               Yesterday
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -320,7 +320,7 @@ export function AppSidebar() {
 
         {grouped.older.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel className="text-xs font-normal text-muted-foreground">
+            <SidebarGroupLabel className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/60">
               Older
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -336,16 +336,16 @@ export function AppSidebar() {
         )}
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-normal text-muted-foreground">
+          <SidebarGroupLabel className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/60">
             Pinned
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {pinnedItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton className="cursor-default">
-                    <Star className="w-4 h-4 min-w-4 text-amber-400 fill-amber-400" />
-                    <span className="truncate">{item.title}</span>
+                  <SidebarMenuButton className="cursor-default hover:bg-white/5 rounded-lg">
+                    <Star className="w-4 h-4 min-w-4 text-amber-400 fill-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.5)]" />
+                    <span className="truncate text-xs font-medium">{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -354,31 +354,31 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 space-y-4">
+      <SidebarFooter className="p-4 space-y-3">
         <Link
           to="/settings"
-          className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground px-2 py-1.5 transition-colors"
+          className="flex items-center gap-3 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-2 rounded-xl transition-all hover:bg-white/5"
         >
           <Settings className="w-4 h-4" />
           <span>Settings</span>
         </Link>
 
-        <button className="flex items-center justify-between w-full p-2 rounded-xl hover:bg-secondary/50 transition-colors border border-transparent hover:border-border/50 text-left">
+        <button className="flex items-center justify-between w-full p-2.5 rounded-2xl btn-3d-secondary text-left">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium text-sm">
+              <div className="w-8 h-8 rounded-full btn-3d-primary flex items-center justify-center font-bold text-xs">
                 V
               </div>
-              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-sidebar" />
+              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-sidebar shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-medium leading-none mb-1 text-foreground">
+              <span className="text-xs font-semibold leading-none mb-1 text-foreground">
                 VOID User
               </span>
-              <span className="text-xs text-muted-foreground leading-none">Local Mode</span>
+              <span className="text-[10px] text-muted-foreground leading-none">Local AI Active</span>
             </div>
           </div>
-          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
       </SidebarFooter>
     </Sidebar>

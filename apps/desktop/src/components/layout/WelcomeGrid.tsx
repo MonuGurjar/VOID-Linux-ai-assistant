@@ -1,4 +1,5 @@
 import { Terminal, FileText, Code2, Search, BrainCircuit, Folder } from 'lucide-react';
+import { VoidLogo } from '@/components/ui/VoidLogo';
 
 export function WelcomeGrid() {
   const suggestions = [
@@ -47,16 +48,16 @@ export function WelcomeGrid() {
   ];
 
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full max-w-3xl mx-auto px-6 animate-in fade-in zoom-in-95 duration-500">
-      <div className="flex flex-col items-center mb-12">
-        <div className="w-20 h-20 mb-6 flex items-center justify-center relative">
-          <img src="/logo-red.png" alt="VOID Logo" className="w-full h-full object-contain" />
+    <div className="flex flex-col items-center justify-center h-full w-full max-w-3xl mx-auto px-6 py-12 animate-in fade-in zoom-in-95 duration-500">
+      <div className="flex flex-col items-center mb-10 text-center">
+        <div className="w-24 h-24 mb-6 flex items-center justify-center relative">
+          <VoidLogo size={96} />
         </div>
-        <h1 className="text-3xl font-bold mb-3 tracking-tight">
-          Welcome to <span className="text-primary">VOID</span>
+        <h1 className="text-4xl font-black mb-3 tracking-tight text-white drop-shadow-md">
+          Welcome to <span className="bg-gradient-to-r from-red-500 via-rose-500 to-red-600 bg-clip-text text-transparent">VOID</span>
         </h1>
-        <p className="text-muted-foreground text-lg text-center max-w-md">
-          Your offline AI companion. Private. Local. Powerful.
+        <p className="text-muted-foreground text-sm max-w-md font-medium">
+          Your tactile, offline AI companion. Private. Local. Unlimited.
         </p>
       </div>
 
@@ -64,14 +65,14 @@ export function WelcomeGrid() {
         {suggestions.map((item, i) => (
           <button
             key={i}
-            className={`flex items-start gap-4 p-4 rounded-xl border border-border/50 bg-card hover:bg-muted/50 hover:border-border transition-all text-left group`}
+            className="flex items-start gap-4 p-4 card-3d-object text-left group"
           >
-            <div className={`p-2.5 rounded-lg border ${item.borderColor} bg-background/50 group-hover:scale-110 transition-transform`}>
-              <item.icon className={`w-5 h-5 ${item.color}`} />
+            <div className={`p-3 rounded-xl inset-3d group-hover:scale-110 transition-transform duration-200 shadow-inner`}>
+              <item.icon className={`w-5 h-5 ${item.color} drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]`} />
             </div>
             <div>
-              <h3 className="font-semibold text-sm mb-1 text-foreground">{item.title}</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">{item.description}</p>
+              <h3 className="font-bold text-xs mb-1 text-foreground tracking-wide group-hover:text-red-400 transition-colors">{item.title}</h3>
+              <p className="text-[11px] text-muted-foreground/80 leading-relaxed font-normal">{item.description}</p>
             </div>
           </button>
         ))}

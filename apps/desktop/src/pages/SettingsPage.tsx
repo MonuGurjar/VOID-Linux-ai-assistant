@@ -54,96 +54,99 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="p-8 max-w-2xl mx-auto w-full flex flex-col gap-8 text-foreground h-full overflow-y-auto">
+    <div className="p-8 max-w-3xl mx-auto w-full flex flex-col gap-8 text-foreground h-full overflow-y-auto">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Settings</h1>
+        <div>
+          <h1 className="text-3xl font-black tracking-tight text-white">Settings</h1>
+          <p className="text-xs text-muted-foreground mt-1">Configure your VOID AI Assistant and local LLM endpoints.</p>
+        </div>
         <button 
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 disabled:opacity-50"
+          className="flex items-center gap-2 px-5 py-2.5 btn-3d-primary rounded-xl font-bold text-xs shadow-lg disabled:opacity-50"
         >
           <Save className="w-4 h-4" /> {isSaving ? "Saving..." : "Save Settings"}
         </button>
       </div>
       
-      <div className="space-y-8">
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold border-b border-border/50 pb-2">Appearance</h2>
+      <div className="space-y-6">
+        <section className="card-3d-object p-6 space-y-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-red-400 border-b border-white/10 pb-3">Appearance</h2>
           
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">Theme</label>
+              <label className="text-xs font-semibold text-muted-foreground">Theme</label>
               <select 
                 value={settings.theme}
                 onChange={e => setSettings({...settings, theme: e.target.value})}
-                className="w-full bg-background border border-border/50 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+                className="w-full btn-3d-secondary rounded-xl p-2.5 text-xs font-medium outline-none cursor-pointer"
               >
-                <option value="dark">Dark</option>
-                <option value="light">Light</option>
+                <option value="dark" className="bg-neutral-900">Dark Mode</option>
+                <option value="light" className="bg-neutral-900">Light Mode</option>
               </select>
             </div>
             
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">Font Size</label>
+              <label className="text-xs font-semibold text-muted-foreground">Font Size</label>
               <select 
                 value={settings.fontSize}
                 onChange={e => setSettings({...settings, fontSize: e.target.value})}
-                className="w-full bg-background border border-border/50 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+                className="w-full btn-3d-secondary rounded-xl p-2.5 text-xs font-medium outline-none cursor-pointer"
               >
-                <option value="12px">Small</option>
-                <option value="14px">Medium</option>
-                <option value="16px">Large</option>
+                <option value="12px" className="bg-neutral-900">Small (12px)</option>
+                <option value="14px" className="bg-neutral-900">Medium (14px)</option>
+                <option value="16px" className="bg-neutral-900">Large (16px)</option>
               </select>
             </div>
           </div>
         </section>
 
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold border-b border-border/50 pb-2">Local AI Integration</h2>
+        <section className="card-3d-object p-6 space-y-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-red-400 border-b border-white/10 pb-3">Local AI Integration</h2>
           
           <div className="grid gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">Base URL</label>
+              <label className="text-xs font-semibold text-muted-foreground">Base URL</label>
               <input 
                 type="text" 
                 value={settings.ai_base_url || ""}
                 onChange={e => setSettings({...settings, ai_base_url: e.target.value})}
                 placeholder="http://localhost:11434/v1"
-                className="w-full bg-background border border-border/50 rounded-lg p-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary/50"
+                className="w-full inset-3d rounded-xl p-2.5 text-xs font-mono outline-none text-foreground"
               />
-              <p className="text-xs text-muted-foreground">Ollama: http://localhost:11434/v1 | LM Studio: http://localhost:1234/v1</p>
+              <p className="text-[11px] text-muted-foreground/70">Ollama: http://localhost:11434/v1 | LM Studio: http://localhost:1234/v1</p>
             </div>
             
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">Model</label>
+              <label className="text-xs font-semibold text-muted-foreground">Default Model</label>
               <select 
                 value={settings.ai_model || ""}
                 onChange={e => setSettings({...settings, ai_model: e.target.value})}
-                className="w-full bg-background border border-border/50 rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+                className="w-full btn-3d-secondary rounded-xl p-2.5 text-xs font-medium outline-none cursor-pointer"
               >
-                <option value="" disabled>Select a model</option>
+                <option value="" disabled className="bg-neutral-900">Select a model</option>
                 {models.map(m => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
+                  <option key={m.id} value={m.id} className="bg-neutral-900">{m.name}</option>
                 ))}
               </select>
             </div>
           </div>
         </section>
 
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold border-b border-border/50 pb-2">Application Information</h2>
-          <div className="grid gap-4 text-sm">
-            <div className="flex justify-between items-center py-2 border-b border-border/20">
-              <span className="text-muted-foreground">Version</span>
-              <span className="font-mono">1.0.0-beta</span>
+        <section className="card-3d-object p-6 space-y-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-red-400 border-b border-white/10 pb-3">Application Info</h2>
+          <div className="grid gap-4 text-xs">
+            <div className="flex justify-between items-center py-1">
+              <span className="text-muted-foreground font-medium">Version</span>
+              <span className="font-mono bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[11px]">1.0.0-beta</span>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">Data Directory</label>
+              <label className="text-xs font-semibold text-muted-foreground">Data Directory</label>
               <input 
                 type="text" 
                 value={settings.dataDir}
                 onChange={e => setSettings({...settings, dataDir: e.target.value})}
-                className="w-full bg-background border border-border/50 rounded-lg p-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary/50"
+                className="w-full inset-3d rounded-xl p-2.5 text-xs font-mono outline-none text-foreground"
               />
             </div>
           </div>

@@ -4,6 +4,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Minus, Square, X, Settings2, ChevronDown } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { PanelLeft } from 'lucide-react';
+import { VoidLogo } from '@/components/ui/VoidLogo';
 
 export function TitleBar() {
   const navigate = useNavigate();
@@ -60,59 +61,59 @@ export function TitleBar() {
   return (
     <div
       data-tauri-drag-region
-      className="h-10 flex justify-between items-center bg-background select-none sticky top-0 z-50 border-b border-border/50"
+      className="h-10 flex justify-between items-center glass-panel-3d select-none sticky top-0 z-50 shadow-md"
     >
       <div className="flex items-center h-full gap-2 pointer-events-auto">
         <button
           onClick={toggleSidebar}
-          className="h-full px-4 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center"
+          className="h-full px-3 text-muted-foreground hover:text-foreground transition-all duration-150 flex items-center justify-center hover:bg-white/5 active:scale-95"
           title="Toggle Sidebar"
         >
           <PanelLeft className="w-4 h-4" />
         </button>
         <div className="flex items-center gap-3 px-2 pointer-events-none">
-          <img src="/logo-red.png" alt="VOID" className="w-6 h-6 object-contain" />
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <span className="flex items-center gap-1">
-              VOID Assistant
+          <VoidLogo className="w-5 h-5" />
+          <div className="flex items-center gap-2 text-xs font-semibold">
+            <span className="flex items-center gap-1 tracking-wide">
+              VOID
               <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </span>
-          <span className="text-muted-foreground font-normal text-xs px-2 py-0.5 rounded-full bg-muted flex items-center gap-1.5 pointer-events-auto">
-            {modelName}
-            <span className={`w-1.5 h-1.5 rounded-full ${modelName === 'Disconnected' ? 'bg-destructive' : 'bg-green-500'}`}></span>
-          </span>
+            <span className="text-muted-foreground font-medium text-[11px] px-2.5 py-0.5 rounded-full btn-3d-secondary flex items-center gap-2 pointer-events-auto shadow-sm">
+              <span className="max-w-[140px] truncate">{modelName}</span>
+              <span className={`w-2 h-2 rounded-full ${modelName === 'Disconnected' ? 'bg-destructive glow-red-3d' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}></span>
+            </span>
+          </div>
         </div>
       </div>
-    </div>
 
-      <div className="flex items-center h-full pointer-events-auto">
+      <div className="flex items-center h-full pointer-events-auto gap-0.5 px-1">
         <button
           onClick={() => navigate('/settings')}
-          className="h-full px-4 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center"
+          className="h-7 w-8 text-muted-foreground hover:text-foreground transition-all flex items-center justify-center rounded hover:bg-white/10 active:scale-95"
           title="Settings"
         >
-          <Settings2 className="w-4 h-4" />
+          <Settings2 className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={handleMinimize}
-          className="h-full px-4 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center"
+          className="h-7 w-8 text-muted-foreground hover:text-foreground transition-all flex items-center justify-center rounded hover:bg-white/10 active:scale-95"
           title="Minimize"
         >
-          <Minus className="w-4 h-4" />
+          <Minus className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={handleMaximize}
-          className="h-full px-4 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center"
+          className="h-7 w-8 text-muted-foreground hover:text-foreground transition-all flex items-center justify-center rounded hover:bg-white/10 active:scale-95"
           title={isMaximized ? "Restore" : "Maximize"}
         >
-          <Square className="w-3.5 h-3.5" />
+          <Square className="w-3 h-3" />
         </button>
         <button
           onClick={handleClose}
-          className="h-full px-4 hover:bg-destructive hover:text-destructive-foreground text-muted-foreground transition-colors flex items-center justify-center"
+          className="h-7 w-8 hover:bg-rose-600/90 hover:text-white text-muted-foreground transition-all flex items-center justify-center rounded active:scale-95"
           title="Close"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
