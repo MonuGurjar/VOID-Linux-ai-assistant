@@ -54,7 +54,7 @@ export function WelcomeGrid() {
           <VoidLogo size={96} />
         </div>
         <h1 className="text-4xl font-black mb-3 tracking-tight text-white drop-shadow-md">
-          Welcome to <span className="bg-gradient-to-r from-red-500 via-rose-500 to-red-600 bg-clip-text text-transparent">VOID</span>
+          Welcome to <span className="bg-gradient-to-r from-purple-400 via-violet-500 to-indigo-500 bg-clip-text text-transparent">VOID</span>
         </h1>
         <p className="text-muted-foreground text-sm max-w-md font-medium">
           Your tactile, offline AI companion. Private. Local. Unlimited.
@@ -71,7 +71,7 @@ export function WelcomeGrid() {
               <item.icon className={`w-5 h-5 ${item.color} drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]`} />
             </div>
             <div>
-              <h3 className="font-bold text-xs mb-1 text-foreground tracking-wide group-hover:text-red-400 transition-colors">{item.title}</h3>
+              <h3 className="font-bold text-xs mb-1 text-foreground tracking-wide group-hover:text-purple-400 transition-colors">{item.title}</h3>
               <p className="text-[11px] text-muted-foreground/80 leading-relaxed font-normal">{item.description}</p>
             </div>
           </button>
