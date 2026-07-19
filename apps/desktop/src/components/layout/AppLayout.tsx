@@ -1,6 +1,7 @@
 import { Outlet } from "react-router";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
+import { RightSidebar } from "./RightSidebar";
 import { TitleBar } from "./TitleBar";
 import { StatusBar } from "./StatusBar";
 
@@ -18,7 +19,7 @@ export function AppLayout() {
       {/* Main App Workspace */}
       <div className="flex flex-1 min-h-0 w-full overflow-hidden relative z-10">
         <AppSidebar />
-        <main className="flex flex-col flex-1 min-w-0 min-h-0 bg-transparent relative border-l border-white/10 overflow-hidden">
+        <main className="flex flex-col flex-1 min-w-0 min-h-0 bg-transparent relative border-x border-white/10 overflow-hidden">
           <div className="absolute top-4 left-4 z-10 lg:hidden">
             <SidebarTrigger className="bg-background/80 backdrop-blur-sm" />
           </div>
@@ -27,6 +28,7 @@ export function AppLayout() {
           </div>
           <StatusBar />
         </main>
+        <RightSidebar />
       </div>
     </SidebarProvider>
   );
