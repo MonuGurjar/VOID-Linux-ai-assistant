@@ -5,6 +5,7 @@ import rehypeHighlight from "rehype-highlight";
 import { Send, Plus, Paperclip, Mic } from "lucide-react";
 
 import { WelcomeGrid } from "@/components/layout/WelcomeGrid";
+import { HorizontalModelSelector } from "@/components/layout/HorizontalModelSelector";
 import { useModelSelection } from "@/hooks/useModelSelection";
 
 interface Message {
@@ -172,6 +173,11 @@ export function ChatPage() {
 
   return (
     <div className="flex flex-col h-full w-full relative min-h-0">
+      {/* Top Header Row — Model Selector pinned to the right */}
+      <div className="flex items-center justify-end px-4 md:px-8 pt-2 pb-1 shrink-0">
+        <HorizontalModelSelector />
+      </div>
+
       {messages.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center min-h-0 overflow-y-auto">
           <WelcomeGrid />

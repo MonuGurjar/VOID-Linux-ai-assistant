@@ -10,6 +10,9 @@ import {
   Brain,
   Quote,
   Sparkles,
+  Server,
+  Database,
+  ShieldCheck,
 } from "lucide-react";
 
 export function RightSidebar() {
@@ -156,7 +159,62 @@ export function RightSidebar() {
         </div>
       </div>
 
-      {/* 4. VOID PHILOSOPHY QUOTE CARD */}
+      {/* 4. SERVICES LOG STATUS */}
+      <div className="card-3d-object p-3.5 space-y-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+            <span className="text-xs font-bold tracking-wider uppercase text-white">
+              Services Log
+            </span>
+          </div>
+          <span className="text-[10px] text-muted-foreground font-medium">Private & Offline</span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-1.5 text-[11px] font-medium">
+          <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <Server className="w-3.5 h-3.5 text-purple-300" /> Backend API
+            </span>
+            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Connected
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <Cpu className="w-3.5 h-3.5 text-purple-300" /> Ollama Engine
+            </span>
+            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Running
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-purple-300" /> LM Studio
+            </span>
+            <div className="flex items-center gap-1 text-[10px] font-semibold text-neutral-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
+              Stopped
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <Database className="w-3.5 h-3.5 text-purple-300" /> SQLite Database
+            </span>
+            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              Active
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. VOID PHILOSOPHY QUOTE CARD */}
       <div className="card-3d-object p-3.5 space-y-2 bg-gradient-to-br from-purple-950/40 via-purple-900/20 to-black/60 border-purple-500/20">
         <Quote className="w-4 h-4 text-purple-400 opacity-60" />
         <p className="text-[11px] italic leading-relaxed text-purple-200/90 font-serif">

@@ -3,7 +3,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { RightSidebar } from "./RightSidebar";
 import { TitleBar } from "./TitleBar";
-import { StatusBar } from "./StatusBar";
+
 
 export function AppLayout() {
   return (
@@ -26,7 +26,7 @@ export function AppLayout() {
           <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative">
             <Outlet />
           </div>
-          <StatusBar />
+
         </main>
         <RightSidebar />
       </div>
