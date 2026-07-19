@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface VoidLogoProps {
   className?: string;
   size?: number;

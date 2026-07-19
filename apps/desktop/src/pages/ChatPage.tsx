@@ -4,7 +4,6 @@ import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import { SendHorizontal, Plus, Paperclip, ChevronDown } from "lucide-react";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { WelcomeGrid } from "@/components/layout/WelcomeGrid";
 
 interface Message {

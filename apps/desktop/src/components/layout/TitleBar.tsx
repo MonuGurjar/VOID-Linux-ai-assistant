@@ -8,7 +8,7 @@ import { VoidLogo } from '@/components/ui/VoidLogo';
 
 export function TitleBar() {
   const navigate = useNavigate();
-  const { toggleSidebar, state } = useSidebar();
+  const { toggleSidebar } = useSidebar();
   const [isMaximized, setIsMaximized] = useState(false);
   const [modelName, setModelName] = useState("Loading...");
   const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
