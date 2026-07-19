@@ -17,14 +17,6 @@ import {
 } from "lucide-react";
 
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
@@ -98,7 +90,7 @@ const pinnedItems = [
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { toggleSidebar } = useSidebar();
+  const { open, toggleSidebar } = useSidebar();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -252,81 +244,83 @@ export function AppSidebar() {
   const hasResults = filtered.length > 0 || !search;
 
   return (
-    <Sidebar className="border-r border-white/10 glass-panel-3d shadow-2xl">
-      <SidebarHeader className="p-4 flex flex-col gap-4">
-        <div className="flex items-center gap-3 px-2">
-          <VoidLogo className="w-8 h-8" />
-          <div className="flex flex-col">
-            <span className="font-extrabold text-base leading-tight text-white tracking-wider">VOID</span>
-            <span className="text-[11px] text-muted-foreground font-medium">AI Assistant</span>
+    <aside
+      className={`shrink-0 h-full border-r border-white/10 glass-panel-3d shadow-2xl flex flex-col justify-between transition-all duration-300 ease-in-out overflow-hidden ${
+        open ? "w-64 sm:w-72 opacity-100" : "w-0 opacity-0 border-r-0 pointer-events-none"
+      }`}
+    >
+      {/* Permanent Fixed Header: Logo, New Chat Button & Search */}
+      <div className="p-4 flex flex-col gap-3 shrink-0 border-b border-white/10">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2.5">
+            <VoidLogo className="w-7 h-7" />
+            <div className="flex flex-col">
+              <span className="font-extrabold text-sm leading-tight text-white tracking-wider">VOID</span>
+              <span className="text-[10px] text-muted-foreground font-medium">AI Assistant</span>
+            </div>
           </div>
-        </div>
-
-        <div className="flex gap-2">
-          <Link
-            to="/"
-            className="flex-1 flex items-center justify-center gap-2 btn-3d-primary rounded-xl text-xs font-semibold py-2.5 shadow-lg"
-          >
-            <Plus className="w-4 h-4 text-white" />
-            New Chat
-          </Link>
           <button
             onClick={toggleSidebar}
-            className="p-2.5 btn-3d-secondary rounded-xl text-muted-foreground hover:text-foreground shadow"
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-white hover:bg-white/10 transition-all active:scale-95"
             title="Collapse Sidebar"
           >
             <PanelLeftClose className="w-4 h-4" />
           </button>
         </div>
 
+        {/* Primary New Chat Action */}
+        <Link
+          to="/"
+          className="w-full flex items-center justify-center gap-2 btn-3d-primary rounded-xl text-xs font-bold py-2.5 shadow-lg tracking-wide hover:brightness-110 active:scale-[0.98] transition-all"
+        >
+          <Plus className="w-4 h-4 text-white" />
+          New Chat
+        </Link>
+
+        {/* Search Input */}
         <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             id="conversation-search"
             type="text"
             placeholder="Search conversations..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full inset-3d rounded-xl py-2 pl-9 pr-12 text-xs focus:outline-none text-foreground placeholder:text-muted-foreground/70"
+            className="w-full inset-3d rounded-xl py-1.5 pl-8 pr-12 text-xs focus:outline-none text-foreground placeholder:text-muted-foreground/60"
           />
-          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-semibold text-muted-foreground/70 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded shadow-inner">
+          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-semibold text-muted-foreground/70 bg-white/5 border border-white/10 px-1 py-0.5 rounded">
             Ctrl K
           </kbd>
         </div>
-      </SidebarHeader>
+      </div>
 
-      <SidebarContent className="px-2">
+      {/* Scrollable Conversation List */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-2 py-2 space-y-2 no-scrollbar">
         {grouped.today.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/60">
+          <div className="flex flex-col gap-1">
+            <div className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground/70 px-2 py-1">
               Today
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{grouped.today.map(renderConversationItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+            </div>
+            <ul className="flex flex-col gap-0.5">{grouped.today.map(renderConversationItem)}</ul>
+          </div>
         )}
 
         {grouped.yesterday.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/60">
+          <div className="flex flex-col gap-1">
+            <div className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground/70 px-2 py-1">
               Yesterday
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{grouped.yesterday.map(renderConversationItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+            </div>
+            <ul className="flex flex-col gap-0.5">{grouped.yesterday.map(renderConversationItem)}</ul>
+          </div>
         )}
 
         {grouped.older.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/60">
+          <div className="flex flex-col gap-1">
+            <div className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground/70 px-2 py-1">
               Older
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{grouped.older.map(renderConversationItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+            </div>
+            <ul className="flex flex-col gap-0.5">{grouped.older.map(renderConversationItem)}</ul>
+          </div>
         )}
 
         {!hasResults && (
@@ -335,52 +329,51 @@ export function AppSidebar() {
           </div>
         )}
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/60">
+        <div className="flex flex-col gap-1 pt-2">
+          <div className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground/70 px-2 py-1">
             Pinned
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {pinnedItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton className="cursor-default hover:bg-white/5 rounded-lg">
-                    <Star className="w-4 h-4 min-w-4 text-amber-400 fill-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.5)]" />
-                    <span className="truncate text-xs font-medium">{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+          </div>
+          <ul className="flex flex-col gap-0.5">
+            {pinnedItems.map((item) => (
+              <li key={item.id}>
+                <div className="flex items-center gap-2 p-2 rounded-lg text-xs font-medium hover:bg-white/5 cursor-default">
+                  <Star className="w-3.5 h-3.5 min-w-3.5 text-amber-400 fill-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.5)]" />
+                  <span className="truncate">{item.title}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
 
-      <SidebarFooter className="p-4 space-y-3">
+      {/* Permanent Fixed Footer: Settings & Profile */}
+      <div className="p-3 shrink-0 border-t border-white/10 space-y-2">
         <Link
           to="/settings"
-          className="flex items-center gap-3 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-2 rounded-xl transition-all hover:bg-white/5"
+          className="flex items-center gap-2.5 text-xs font-medium text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-xl transition-all hover:bg-white/5"
         >
           <Settings className="w-4 h-4" />
           <span>Settings</span>
         </Link>
 
-        <button className="flex items-center justify-between w-full p-2.5 rounded-2xl btn-3d-secondary text-left">
-          <div className="flex items-center gap-3">
+        <button className="flex items-center justify-between w-full p-2 rounded-xl btn-3d-secondary text-left">
+          <div className="flex items-center gap-2.5">
             <div className="relative">
-              <div className="w-8 h-8 rounded-full btn-3d-primary flex items-center justify-center font-bold text-xs">
+              <div className="w-7 h-7 rounded-full btn-3d-primary flex items-center justify-center font-bold text-xs">
                 V
               </div>
-              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-sidebar shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+              <div className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 rounded-full border border-sidebar shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
             </div>
             <div className="flex flex-col">
               <span className="text-xs font-semibold leading-none mb-1 text-foreground">
                 VOID User
               </span>
-              <span className="text-[10px] text-muted-foreground leading-none">Local AI Active</span>
+              <span className="text-[9px] text-muted-foreground leading-none">Local AI Active</span>
             </div>
           </div>
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
-      </SidebarFooter>
-    </Sidebar>
+      </div>
+    </aside>
   );
 }

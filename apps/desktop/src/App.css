@@ -9,11 +9,15 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
+  html, body, #root {
+    @apply bg-background text-foreground font-sans;
+    height: 100vh;
+    max-height: 100vh;
+    width: 100vw;
+    max-width: 100vw;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
   }
 }
 

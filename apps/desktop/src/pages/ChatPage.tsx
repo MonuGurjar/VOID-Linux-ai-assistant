@@ -106,10 +106,12 @@ export function ChatPage() {
     }
   };
 
-  // Auto-scroll to bottom
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll chat message container safely without scrolling window body
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior: "smooth" });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
@@ -233,7 +235,7 @@ export function ChatPage() {
           <WelcomeGrid />
         </div>
       ) : (
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto" ref={chatContainerRef}>
           <div className="max-w-4xl mx-auto space-y-6 p-4 lg:p-8 pb-6">
             {messages.map((msg, i) => (
               <div
@@ -329,7 +331,7 @@ export function ChatPage() {
         </div>
       )}
 
-      <div className="px-4 md:px-8 pb-4 pt-2 shrink-0">
+      <div className="px-4 md:px-8 pb-2 pt-1 shrink-0">
         <div className="max-w-4xl mx-auto relative">
           <div className="flex flex-col w-full rounded-2xl glass-panel-3d shadow-2xl transition-all border border-white/15">
             <textarea
