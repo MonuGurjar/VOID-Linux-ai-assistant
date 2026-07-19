@@ -28,20 +28,26 @@ export function ChatPage() {
   const [activeProvider, setActiveProvider] = useState<string>("ollama");
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isSendingRef = useRef(false);
   const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
   // Fetch messages if we load an existing chat
   useEffect(() => {
     if (id) {
+      if (isSendingRef.current) return;
       fetch(`${API_URL}/conversations/${id}/messages`)
         .then((res) => res.json())
         .then((data: Message[]) => {
-           // Filter out empty ghost messages from history
-           setMessages(data.filter(m => m.content !== "" || m.role === "user"));
+           if (!isSendingRef.current) {
+             // Filter out empty ghost messages from history
+             setMessages(data.filter(m => m.content !== "" || m.role === "user"));
+           }
         })
         .catch((err) => console.error("Failed to load messages", err));
     } else {
-      setMessages([]);
+      if (!isSendingRef.current) {
+        setMessages([]);
+      }
     }
   }, [id, API_URL]);
 
@@ -111,6 +117,7 @@ export function ChatPage() {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
     
+    isSendingRef.current = true;
     const userMessage = input.trim();
     setInput("");
     
@@ -208,6 +215,8 @@ export function ChatPage() {
         return prev;
       });
       setIsLoading(false);
+    } finally {
+      isSendingRef.current = false;
     }
   };
 

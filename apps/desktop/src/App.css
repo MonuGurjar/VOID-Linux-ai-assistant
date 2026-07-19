@@ -278,3 +278,26 @@
 .ambient-orb-indigo {
   animation: ambientFloat 18s ease-in-out infinite reverse;
 }
+
+/* 3D Streaming Text Animation */
+@keyframes char3dPop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.92) rotateX(-15deg);
+    filter: blur(2px);
+    text-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotateX(0deg);
+    filter: blur(0);
+    text-shadow: none;
+  }
+}
+
+.char-3d-entrance {
+  display: inline-block;
+  animation: char3dPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center bottom;
+  perspective: 400px;
+}

@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
@@ -11,6 +12,7 @@ from ..db import get_session, engine
 from ..models.chat import Message, Conversation
 from ..models.settings import Setting
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/conversations/{conversation_id}/messages", tags=["chat"])
 
 def utc_now() -> datetime:
@@ -42,13 +44,17 @@ async def post_message(conversation_id: int, message: Message, session: Session 
     session.commit()
     session.refresh(message)
 
-    # 3. Retrieve context (last 20 messages for example)
+    # 3. Retrieve context (last 20 messages with non-empty content)
     past_messages = session.exec(
         select(Message).where(Message.conversation_id == conversation_id).order_by(Message.created_at)
     ).all()
     
-    # Format for OpenAI
-    ai_messages = [{"role": m.role, "content": m.content} for m in past_messages[-20:]]
+    # Clean and format for OpenAI / Ollama payload (filter out empty or whitespace-only messages)
+    ai_messages = [
+        {"role": m.role, "content": m.content.strip()}
+        for m in past_messages[-20:]
+        if m.content and m.content.strip()
+    ]
 
     # Get settings for Base URL and Model
     url_setting = session.get(Setting, "ai_base_url")
@@ -79,19 +85,21 @@ async def post_message(conversation_id: int, message: Message, session: Session 
                     yield f"data: {json.dumps({'content': content})}\n\n"
                     
         except Exception as e:
+            logger.error(f"Error in LLM stream generation: {e}")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
         finally:
             # Send done signal
             yield "data: [DONE]\n\n"
             
-            # Save assistant message to DB outside the active streaming context
-            with Session(engine) as db_session:
-                assistant_msg = Message(
-                    conversation_id=conversation_id,
-                    role="assistant",
-                    content=full_content
-                )
-                db_session.add(assistant_msg)
-                db_session.commit()
+            # Save assistant message to DB ONLY if we actually got non-empty response content
+            if full_content and full_content.strip():
+                with Session(engine) as db_session:
+                    assistant_msg = Message(
+                        conversation_id=conversation_id,
+                        role="assistant",
+                        content=full_content.strip()
+                    )
+                    db_session.add(assistant_msg)
+                    db_session.commit()
 
     return StreamingResponse(generate_response(), media_type="text/event-stream")
