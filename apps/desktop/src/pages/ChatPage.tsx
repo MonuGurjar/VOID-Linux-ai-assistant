@@ -228,12 +228,14 @@ export function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-transparent relative">
-      <ScrollArea className="flex-1">
-        {messages.length === 0 ? (
+    <div className="flex flex-col h-full min-h-0 bg-transparent relative overflow-hidden">
+      {messages.length === 0 ? (
+        <div className="flex-1 min-h-0 overflow-y-auto">
           <WelcomeGrid />
-        ) : (
-          <div className="max-w-4xl mx-auto space-y-6 p-4 lg:p-8 pb-4">
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="max-w-4xl mx-auto space-y-6 p-4 lg:p-8 pb-6">
             {messages.map((msg, i) => (
               <div
                 key={i}
@@ -325,8 +327,8 @@ export function ChatPage() {
             )}
             <div ref={scrollRef} />
           </div>
-        )}
-      </ScrollArea>
+        </div>
+      )}
 
       <div className="px-4 md:px-8 pb-4 pt-2 shrink-0">
         <div className="max-w-4xl mx-auto relative">
