@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
-import { SendHorizontal, Plus, Paperclip, ChevronDown } from "lucide-react";
+import { Send, Plus, Paperclip, Mic } from "lucide-react";
 
 import { WelcomeGrid } from "@/components/layout/WelcomeGrid";
+import { useModelSelection } from "@/hooks/useModelSelection";
 
 interface Message {
   id?: number;
@@ -20,14 +21,13 @@ export function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // Model settings state
-  const [models, setModels] = useState<{id: string, name: string}[]>([]);
-  const [activeModel, setActiveModel] = useState<string>("");
-  const [activeProvider, setActiveProvider] = useState<string>("ollama");
+
+  // Model selection synced with Left Sidebar
+  const { provider: activeProvider, selectedModel: activeModel } = useModelSelection();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef(false);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
   // Fetch messages if we load an existing chat
@@ -37,10 +37,9 @@ export function ChatPage() {
       fetch(`${API_URL}/conversations/${id}/messages`)
         .then((res) => res.json())
         .then((data: Message[]) => {
-           if (!isSendingRef.current) {
-             // Filter out empty ghost messages from history
-             setMessages(data.filter(m => m.content !== "" || m.role === "user"));
-           }
+          if (!isSendingRef.current) {
+            setMessages(data.filter((m) => m.content !== "" || m.role === "user"));
+          }
         })
         .catch((err) => console.error("Failed to load messages", err));
     } else {
@@ -49,64 +48,6 @@ export function ChatPage() {
       }
     }
   }, [id, API_URL]);
-
-  // Fetch AI settings and models
-  const fetchModels = async () => {
-    try {
-      const res = await fetch(`${API_URL}/ai/models`);
-      const data = await res.json();
-      setModels(data);
-    } catch(err) {
-      console.error("Failed to load models:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchModels();
-
-    fetch(`${API_URL}/settings/`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.ai_model) setActiveModel(data.ai_model);
-        if (data.ai_base_url?.includes("1234")) {
-          setActiveProvider("lmstudio");
-        } else {
-          setActiveProvider("ollama");
-        }
-      })
-      .catch(err => console.error("Failed to load settings:", err));
-  }, [API_URL]);
-
-  const handleProviderChange = async (provider: string) => {
-    setActiveProvider(provider);
-    const newUrl = provider === "lmstudio" ? "http://localhost:1234/v1" : "http://localhost:11434/v1";
-    try {
-      await fetch(`${API_URL}/settings/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ai_base_url: newUrl, ai_model: "" }) // reset model
-      });
-      setActiveModel("");
-      fetchModels(); // Refetch models from new provider
-    } catch (err) {
-      console.error("Failed to switch provider", err);
-    }
-  };
-
-  const handleModelChange = async (newModel: string) => {
-    setActiveModel(newModel);
-    try {
-      await fetch(`${API_URL}/settings/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ai_model: newModel })
-      });
-    } catch (err) {
-      console.error("Failed to update model setting", err);
-    }
-  };
-
-  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll chat message container safely without scrolling window body
   useEffect(() => {
@@ -117,20 +58,21 @@ export function ChatPage() {
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
-    
+    if (isSendingRef.current) return;
     isSendingRef.current = true;
+
     const userMessage = input.trim();
     setInput("");
-    
+    setError(null);
+
     // Optimistic UI update
-    const newMsg: Message = { role: "user", content: userMessage };
-    setMessages((prev) => [...prev, newMsg]);
+    const userMsg: Message = { role: "user", content: userMessage, created_at: new Date().toISOString() };
+    const assistantMsg: Message = { role: "assistant", content: "", created_at: new Date().toISOString() };
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setIsLoading(true);
 
     try {
       let chatId = id;
-      
-      // If no ID, create a new conversation first
       if (!chatId) {
         const createRes = await fetch(`${API_URL}/conversations/`, {
           method: "POST",
@@ -140,88 +82,88 @@ export function ChatPage() {
         if (!createRes.ok) throw new Error("Failed to create conversation");
         const chatData = await createRes.json();
         chatId = chatData.id;
-        // Update URL silently so refresh keeps us in this chat
         navigate(`/chat/${chatId}`, { replace: true });
       }
 
-      // Send message and get streaming response
       const msgRes = await fetch(`${API_URL}/conversations/${chatId}/messages/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: "user", content: userMessage }),
+        body: JSON.stringify({
+          role: "user",
+          content: userMessage,
+          model: activeModel,
+          provider: activeProvider,
+        }),
       });
-      
-      if (!msgRes.ok) throw new Error("Failed to get response");
+
+      if (!msgRes.ok) throw new Error("Failed to send message");
       if (!msgRes.body) throw new Error("No response body");
 
       const reader = msgRes.body.getReader();
       const decoder = new TextDecoder();
-      let assistantMsg: Message = { role: "assistant", content: "", created_at: new Date().toISOString() };
-      
-      // Add empty assistant message to UI
-      setMessages((prev) => [...prev, assistantMsg]);
-      setIsLoading(false); // Can hide loader since we are streaming now
+      let streamContent = "";
 
-      let isDone = false;
-      while (!isDone) {
+      while (true) {
         const { value, done } = await reader.read();
         if (done) break;
 
         const chunkText = decoder.decode(value, { stream: true });
-        const lines = chunkText.split('\n');
+        const lines = chunkText.split("\n");
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const dataStr = line.replace('data: ', '').trim();
-            if (dataStr === '[DONE]') {
-              isDone = true;
-              break;
-            }
+          if (line.startsWith("data: ")) {
+            const dataStr = line.replace("data: ", "").trim();
+            if (dataStr === "[DONE]") break;
             if (!dataStr) continue;
-            
+
             try {
               const data = JSON.parse(dataStr);
-              if (data.error) {
-                 throw new Error(data.error);
-              }
+              if (data.error) throw new Error(data.error);
               if (data.content) {
-                assistantMsg.content += data.content;
-                // Update UI continuously
-                setMessages(prev => {
+                streamContent += data.content;
+                setMessages((prev) => {
                   const newMsgs = [...prev];
-                  newMsgs[newMsgs.length - 1] = { ...assistantMsg };
+                  newMsgs[newMsgs.length - 1] = {
+                    role: "assistant",
+                    content: streamContent,
+                    created_at: new Date().toISOString(),
+                  };
                   return newMsgs;
                 });
               }
             } catch (e) {
-              console.error("Error parsing stream chunk", e, dataStr);
+              if (dataStr && dataStr !== "[DONE]") {
+                streamContent += dataStr;
+                setMessages((prev) => {
+                  const newMsgs = [...prev];
+                  newMsgs[newMsgs.length - 1] = {
+                    role: "assistant",
+                    content: streamContent,
+                    created_at: new Date().toISOString(),
+                  };
+                  return newMsgs;
+                });
+              }
             }
           }
         }
       }
-
-      // If stream finished and message is still empty, remove it (e.g. error)
-      if (!assistantMsg.content) {
-        setMessages(prev => prev.slice(0, -1));
-      }
-      
     } catch (err: any) {
       console.error("Failed to send message", err);
       setError(err.message || "An error occurred");
-      // Remove empty ghost message if error occurred
-      setMessages(prev => {
+      setMessages((prev) => {
         if (prev.length > 0 && prev[prev.length - 1].role === "assistant" && !prev[prev.length - 1].content) {
           return prev.slice(0, -1);
         }
         return prev;
       });
-      setIsLoading(false);
     } finally {
+      setIsLoading(false);
       isSendingRef.current = false;
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -229,9 +171,9 @@ export function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-transparent relative overflow-hidden">
+    <div className="flex flex-col h-full w-full relative min-h-0">
       {messages.length === 0 ? (
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="flex-1 flex flex-col items-center justify-center min-h-0 overflow-y-auto">
           <WelcomeGrid />
         </div>
       ) : (
@@ -245,10 +187,10 @@ export function ChatPage() {
                 }`}
               >
                 <div
-                  className={`max-w-[85%] rounded-2xl px-5 py-3.5 relative group ${
+                  className={`max-w-[85%] rounded-2xl px-5 py-3.5 shadow-xl backdrop-blur-md transition-all ${
                     msg.role === "user"
-                      ? "btn-3d-primary font-medium text-white shadow-lg"
-                      : "bg-transparent text-foreground"
+                      ? "btn-3d-primary text-white font-medium rounded-tr-xs"
+                      : "card-3d-object text-foreground rounded-tl-xs"
                   }`}
                 >
                   {msg.role === "user" ? (
@@ -262,17 +204,17 @@ export function ChatPage() {
                           <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-bounce [animation-delay:0.4s] glow-purple-3d" />
                         </div>
                       ) : (
-                        <ReactMarkdown 
+                        <ReactMarkdown
                           rehypePlugins={[rehypeHighlight]}
                           components={{
-                            code({node, className, children, ...props}) {
-                              const match = /language-(\w+)/.exec(className || '');
+                            code({ node, className, children, ...props }) {
+                              const match = /language-(\w+)/.exec(className || "");
                               return match ? (
                                 <div className="relative group/code rounded-xl overflow-hidden my-4 inset-3d border border-white/10 shadow-inner">
                                   <div className="flex items-center justify-between px-3.5 py-2 bg-white/5 text-xs text-muted-foreground border-b border-white/10 font-mono">
                                     <span className="font-semibold text-purple-400">{match[1]}</span>
-                                    <button 
-                                      onClick={() => navigator.clipboard.writeText(String(children).replace(/\n$/, ''))}
+                                    <button
+                                      onClick={() => navigator.clipboard.writeText(String(children).replace(/\n$/, ""))}
                                       className="hover:text-foreground transition-colors btn-3d-secondary px-2 py-0.5 rounded text-[10px]"
                                     >
                                       Copy Code
@@ -283,11 +225,14 @@ export function ChatPage() {
                                   </code>
                                 </div>
                               ) : (
-                                <code className={`${className} bg-white/10 rounded-md px-1.5 py-0.5 text-purple-400 font-mono text-xs`} {...props}>
+                                <code
+                                  className={`${className} bg-white/10 rounded-md px-1.5 py-0.5 text-purple-400 font-mono text-xs`}
+                                  {...props}
+                                >
                                   {children}
                                 </code>
                               );
-                            }
+                            },
                           }}
                         >
                           {msg.content}
@@ -296,14 +241,18 @@ export function ChatPage() {
                     </div>
                   )}
                   {msg.created_at && (
-                    <div className={`text-[10px] text-muted-foreground/80 mt-2 ${msg.role === "user" ? "text-right text-white/80" : "text-left"}`}>
-                      {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    <div
+                      className={`text-[10px] text-muted-foreground/80 mt-2 ${
+                        msg.role === "user" ? "text-right text-white/80" : "text-left"
+                      }`}
+                    >
+                      {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </div>
                   )}
                 </div>
               </div>
             ))}
-            
+
             {isLoading && (
               <div className="flex items-start">
                 <div className="bg-transparent text-foreground max-w-[85%] rounded-2xl px-5 py-3.5">
@@ -331,72 +280,62 @@ export function ChatPage() {
         </div>
       )}
 
-      <div className="px-4 md:px-8 pb-2 pt-1 shrink-0">
+      {/* Slim Single-Line Chat Input Bar */}
+      <div className="px-4 md:px-8 pb-3 pt-1 shrink-0">
         <div className="max-w-4xl mx-auto relative">
-          <div className="flex flex-col w-full rounded-2xl glass-panel-3d shadow-2xl transition-all border border-white/15">
-            <textarea
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
+            className="flex items-center gap-2.5 w-full glass-panel-3d shadow-2xl rounded-2xl p-2 px-3 border border-white/15 focus-within:border-purple-500/50 transition-all"
+          >
+            {/* Left corner + Icon button & Attachment */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                className="p-2 text-muted-foreground hover:text-white btn-3d-secondary rounded-xl transition-all active:scale-95"
+                title="Add attachment or tool"
+              >
+                <Plus className="w-4 h-4 text-purple-400" />
+              </button>
+              <button
+                type="button"
+                className="p-2 text-muted-foreground hover:text-white btn-3d-secondary rounded-xl transition-all active:scale-95 hidden sm:flex"
+                title="Attach file"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Slim Input Field */}
+            <input
+              type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type a message..."
-              className="flex min-h-[60px] max-h-[40vh] w-full bg-transparent px-4 py-4 text-sm outline-none resize-none placeholder:text-muted-foreground/60 text-foreground"
-              rows={1}
+              placeholder="Ask VOID anything..."
+              className="flex-1 bg-transparent px-2 py-1 text-sm outline-none placeholder:text-muted-foreground/60 text-foreground font-medium"
             />
-            <div className="flex items-center justify-between p-2.5 pt-0">
-              <div className="flex items-center gap-1.5">
-                <button className="p-2 text-muted-foreground hover:text-foreground btn-3d-secondary rounded-xl transition-all">
-                  <Plus className="w-4 h-4" />
-                </button>
-                <button className="p-2 text-muted-foreground hover:text-foreground btn-3d-secondary rounded-xl transition-all">
-                  <Paperclip className="w-4 h-4" />
-                </button>
-                <button className="px-3 py-1.5 flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground btn-3d-secondary rounded-xl transition-all">
-                  @ Tools
-                </button>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <div className="relative flex items-center inset-3d rounded-xl p-1">
-                  <button
-                    onClick={() => handleProviderChange("ollama")}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
-                      activeProvider === "ollama" ? "btn-3d-primary text-white shadow-md" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Ollama
-                  </button>
-                  <button
-                    onClick={() => handleProviderChange("lmstudio")}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
-                      activeProvider === "lmstudio" ? "btn-3d-primary text-white shadow-md" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    LM Studio
-                  </button>
-                </div>
-                <div className="relative flex items-center">
-                  <select 
-                    value={activeModel}
-                    onChange={(e) => handleModelChange(e.target.value)}
-                    className="appearance-none px-3 py-1.5 pr-8 flex items-center gap-2 text-xs font-semibold text-foreground btn-3d-secondary rounded-xl cursor-pointer outline-none max-w-[200px] truncate"
-                  >
-                    <option value="" disabled className="bg-neutral-900">Select Model</option>
-                    {models.map(m => (
-                      <option key={m.id} value={m.id} className="bg-neutral-900">{m.name}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 pointer-events-none" />
-                </div>
-                <button 
-                  onClick={handleSend}
-                  disabled={isLoading || !input.trim()}
-                  className="p-2.5 btn-3d-primary disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all flex items-center justify-center shadow-lg"
-                >
-                  <SendHorizontal className="w-4 h-4" />
-                </button>
-              </div>
+
+            {/* Right corner controls: Mic & Send Button */}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                className="p-2 text-muted-foreground hover:text-white transition-colors"
+                title="Voice Input"
+              >
+                <Mic className="w-4 h-4" />
+              </button>
+              <button
+                type="submit"
+                disabled={!input.trim() || isLoading}
+                className="btn-3d-primary p-2.5 rounded-xl text-white shadow-lg disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all flex items-center justify-center"
+              >
+                <Send className="w-4 h-4" />
+              </button>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>

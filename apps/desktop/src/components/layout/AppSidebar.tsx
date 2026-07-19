@@ -16,6 +16,8 @@ import {
   Star,
 } from "lucide-react";
 
+import { SlimModelSelector } from "./SlimModelSelector";
+
 import {
   SidebarMenuButton,
   SidebarMenuItem,
@@ -249,8 +251,8 @@ export function AppSidebar() {
         open ? "w-64 sm:w-72 opacity-100" : "w-0 opacity-0 border-r-0 pointer-events-none"
       }`}
     >
-      {/* Permanent Fixed Header: Logo, New Chat Button & Search */}
-      <div className="p-4 flex flex-col gap-3 shrink-0 border-b border-white/10">
+      {/* Permanent Fixed Header: Logo, Model Selector, New Chat Button & Search */}
+      <div className="p-3.5 flex flex-col gap-2.5 shrink-0 border-b border-white/10">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2.5">
             <VoidLogo className="w-7 h-7" />
@@ -268,10 +270,13 @@ export function AppSidebar() {
           </button>
         </div>
 
+        {/* Top Right Model Selector */}
+        <SlimModelSelector />
+
         {/* Primary New Chat Action */}
         <Link
           to="/"
-          className="w-full flex items-center justify-center gap-2 btn-3d-primary rounded-xl text-xs font-bold py-2.5 shadow-lg tracking-wide hover:brightness-110 active:scale-[0.98] transition-all"
+          className="w-full flex items-center justify-center gap-2 btn-3d-primary rounded-xl text-xs font-bold py-2 shadow-lg tracking-wide hover:brightness-110 active:scale-[0.98] transition-all"
         >
           <Plus className="w-4 h-4 text-white" />
           New Chat
