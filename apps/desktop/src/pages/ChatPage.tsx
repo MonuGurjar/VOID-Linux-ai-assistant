@@ -282,7 +282,7 @@ export function ChatPage() {
                   className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-5 py-3.5 shadow-xl backdrop-blur-md transition-all ${
+                    className={`max-w-[85%] rounded-2xl px-5 py-3.5 shadow-xl transition-all ${
                       msg.role === "user"
                         ? "btn-3d-primary text-white font-medium rounded-tr-xs"
                         : "card-3d-object text-foreground rounded-tl-xs"
