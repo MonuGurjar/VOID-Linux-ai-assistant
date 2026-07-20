@@ -67,7 +67,7 @@ export function RightSidebar({ open = true, width = 300, onToggle, onResizeStart
       name: "vLLM Engine",
       icon: Layers,
       status: "stopped",
-      instruction: "Run command: vllm serve <model_name> --port 8000",
+      instruction: "Run command: vllm serve <model_name> --port 8080",
     },
     {
       id: "sqlite",

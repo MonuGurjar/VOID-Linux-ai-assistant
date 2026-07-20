@@ -11,7 +11,7 @@ router = APIRouter(prefix="/ai", tags=["ai"])
 DEFAULT_PROVIDER_URLS = {
     "ollama": "http://localhost:11434/v1",
     "lmstudio": "http://localhost:1234/v1",
-    "vllm": "http://localhost:8000/v1",
+    "vllm": "http://localhost:8080/v1",
 }
 
 @router.get("/models")
@@ -42,16 +42,38 @@ async def get_models(
 
 @router.get("/health")
 async def check_services_health():
-    """Pings local provider endpoints and returns status."""
+    """Pings local provider endpoints cleanly and returns status."""
     async with httpx.AsyncClient(timeout=1.5) as http_client:
-        results = {}
-        for name, url in DEFAULT_PROVIDER_URLS.items():
-            try:
-                res = await http_client.get(f"{url.replace('/v1', '')}/api/tags" if name == "ollama" else f"{url}/models")
-                results[name] = "running" if res.status_code == 200 else "stopped"
-            except Exception:
-                results[name] = "stopped"
+        results = {
+            "backend": "running",
+            "sqlite": "running",
+            "ollama": "stopped",
+            "lmstudio": "stopped",
+            "vllm": "stopped",
+        }
         
-        results["backend"] = "running"
-        results["sqlite"] = "running"
+        # Check Ollama
+        try:
+            res = await http_client.get("http://localhost:11434/api/tags")
+            if res.status_code == 200:
+                results["ollama"] = "running"
+        except Exception:
+            pass
+
+        # Check LM Studio
+        try:
+            res = await http_client.get("http://localhost:1234/v1/models")
+            if res.status_code == 200:
+                results["lmstudio"] = "running"
+        except Exception:
+            pass
+
+        # Check vLLM
+        try:
+            res = await http_client.get("http://localhost:8080/v1/models")
+            if res.status_code == 200:
+                results["vllm"] = "running"
+        except Exception:
+            pass
+            
         return results

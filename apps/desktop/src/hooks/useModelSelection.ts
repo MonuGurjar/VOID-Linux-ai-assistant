@@ -11,7 +11,7 @@ export interface ModelOption {
 const PROVIDER_ENDPOINTS: Record<ProviderType, string> = {
   ollama: "http://localhost:11434/api/tags",
   lmstudio: "http://localhost:1234/v1/models",
-  vllm: "http://localhost:8000/v1/models",
+  vllm: "http://localhost:8080/v1/models",
   custom: "http://localhost:8080/v1/models",
 };
 
