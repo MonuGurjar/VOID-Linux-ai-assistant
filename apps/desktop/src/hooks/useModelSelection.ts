@@ -8,13 +8,6 @@ export interface ModelOption {
   provider: ProviderType;
 }
 
-const PROVIDER_ENDPOINTS: Record<ProviderType, string> = {
-  ollama: "http://localhost:11434/api/tags",
-  lmstudio: "http://localhost:1234/v1/models",
-  vllm: "http://localhost:8080/v1/models",
-  custom: "http://localhost:8080/v1/models",
-};
-
 let globalProvider: ProviderType = (localStorage.getItem("void_provider") as ProviderType) || "ollama";
 let globalSelectedModel: string = localStorage.getItem("void_selected_model") || "";
 let globalModels: ModelOption[] = [];
@@ -29,6 +22,8 @@ export function useModelSelection() {
   const [selectedModel, setSelectedModelState] = useState<string>(globalSelectedModel);
   const [models, setModels] = useState<ModelOption[]>(globalModels);
   const [isLoading, setIsLoading] = useState(false);
+
+  const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
   useEffect(() => {
     const handleChange = () => {
@@ -46,41 +41,41 @@ export function useModelSelection() {
   const fetchModels = async (prov = globalProvider) => {
     setIsLoading(true);
     try {
-      if (prov === "ollama") {
-        const res = await fetch("http://localhost:11434/api/tags");
-        if (res.ok) {
-          const data = await res.json();
-          const list: ModelOption[] = (data.models || []).map((m: any) => ({
-            id: m.name,
-            name: m.name,
-            provider: "ollama" as const,
-          }));
-          globalModels = list;
-          if (list.length > 0 && (!globalSelectedModel || !list.some((m) => m.id === globalSelectedModel))) {
-            globalSelectedModel = list[0].id;
-            localStorage.setItem("void_selected_model", list[0].id);
+      const res = await fetch(`${API_URL}/ai/models?provider=${prov}`);
+      if (res.ok) {
+        const data = await res.json();
+        const list: ModelOption[] = (data || []).map((m: any) => ({
+          id: m.id || m.name,
+          name: m.name || m.id,
+          provider: prov,
+        }));
+
+        // Fallback for Ollama if /ai/models returns empty list
+        if (list.length === 0 && prov === "ollama") {
+          const directRes = await fetch("http://localhost:11434/api/tags");
+          if (directRes.ok) {
+            const directData = await directRes.json();
+            const fallbackList: ModelOption[] = (directData.models || []).map((m: any) => ({
+              id: m.name,
+              name: m.name,
+              provider: "ollama" as const,
+            }));
+            globalModels = fallbackList;
+            if (fallbackList.length > 0 && (!globalSelectedModel || !fallbackList.some((m) => m.id === globalSelectedModel))) {
+              globalSelectedModel = fallbackList[0].id;
+              localStorage.setItem("void_selected_model", fallbackList[0].id);
+            }
+            return;
           }
-        } else {
-          globalModels = [];
+        }
+
+        globalModels = list;
+        if (list.length > 0 && (!globalSelectedModel || !list.some((m) => m.id === globalSelectedModel))) {
+          globalSelectedModel = list[0].id;
+          localStorage.setItem("void_selected_model", list[0].id);
         }
       } else {
-        const url = PROVIDER_ENDPOINTS[prov] || PROVIDER_ENDPOINTS.ollama;
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          const list: ModelOption[] = (data.data || []).map((m: any) => ({
-            id: m.id,
-            name: m.id,
-            provider: prov,
-          }));
-          globalModels = list;
-          if (list.length > 0 && (!globalSelectedModel || !list.some((m) => m.id === globalSelectedModel))) {
-            globalSelectedModel = list[0].id;
-            localStorage.setItem("void_selected_model", list[0].id);
-          }
-        } else {
-          globalModels = [];
-        }
+        globalModels = [];
       }
     } catch (e) {
       console.warn("Failed to fetch models for", prov, e);

@@ -89,11 +89,31 @@ async def post_message(conversation_id: int, message: Message, session: Session 
     model_setting = session.get(Setting, "ai_model")
     model_name = req_model or (model_setting.value if model_setting else "void:latest")
 
-    # 5. Resolve System Prompt
+    # 5. Resolve System Prompt & Tools Context
     system_setting = session.get(Setting, "system_prompt")
-    system_prompt = req_system_prompt or (system_setting.value if system_setting else DEFAULT_SYSTEM_PROMPT)
+    base_system_prompt = req_system_prompt or (system_setting.value if system_setting else DEFAULT_SYSTEM_PROMPT)
 
-    ai_messages = [{"role": "system", "content": system_prompt}]
+    # Auto-enrich system questions with live Linux system telemetry
+    user_query_lower = message.content.lower()
+    system_telemetry_suffix = ""
+    if any(k in user_query_lower for k in ["linux", "distro", "distribution", "disk", "free space", "ram", "cpu", "system info", "os", "specs", "hardware", "kernel"]):
+        try:
+            from ..tools.builtin import SystemInfoTool
+            sys_data = await SystemInfoTool().execute()
+            system_telemetry_suffix = (
+                f"\n\n[LIVE LINUX SYSTEM TELEMETRY]\n"
+                f"- OS / Machine: {sys_data.get('os')} ({sys_data.get('release')}, {sys_data.get('machine')})\n"
+                f"- CPU Usage: {sys_data.get('cpu_usage_percent')}%\n"
+                f"- RAM Usage: {sys_data.get('ram_used_gb')} GB / {sys_data.get('ram_total_gb')} GB ({sys_data.get('ram_percent')}%)\n"
+                f"- Disk Space: {sys_data.get('disk_free_gb')} GB free out of {sys_data.get('disk_total_gb')} GB ({sys_data.get('disk_percent')}% used)\n"
+                f"Answer the user's question directly using this live system telemetry data."
+            )
+        except Exception as e:
+            logger.warning(f"Failed to auto-fetch system telemetry: {e}")
+
+    full_system_prompt = base_system_prompt + system_telemetry_suffix
+
+    ai_messages = [{"role": "system", "content": full_system_prompt}]
     for m in past_messages[-20:]:
         if m.content and m.content.strip():
             clean_content = strip_thinking_tags(m.content.strip())
