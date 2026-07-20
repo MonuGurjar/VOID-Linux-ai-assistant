@@ -1,33 +1,32 @@
-import { useModelSelection } from "@/hooks/useModelSelection";
+import { useModelSelection, ProviderType } from "@/hooks/useModelSelection";
 import { Cpu, ChevronDown } from "lucide-react";
 
 export function HorizontalModelSelector() {
   const { provider, setProvider, selectedModel, setSelectedModel, models } = useModelSelection();
 
+  const providers: { id: ProviderType; label: string }[] = [
+    { id: "ollama", label: "Ollama" },
+    { id: "lmstudio", label: "LM Studio" },
+    { id: "vllm", label: "vLLM" },
+  ];
+
   return (
-    <div className="flex items-center gap-2 glass-panel-3d p-1.5 px-2.5 rounded-2xl shadow-xl border border-white/15 backdrop-blur-md">
-      {/* Horizontal Provider Pill Toggle */}
+    <div className="flex items-center gap-2 glass-panel-glossy p-1.5 px-2.5 rounded-2xl shadow-xl border border-white/15">
+      {/* Horizontal Multi-Provider Pill Toggle */}
       <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl inset-3d">
-        <button
-          onClick={() => setProvider("ollama")}
-          className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
-            provider === "ollama"
-              ? "btn-3d-primary text-white shadow-md"
-              : "text-muted-foreground hover:text-white"
-          }`}
-        >
-          Ollama
-        </button>
-        <button
-          onClick={() => setProvider("lmstudio")}
-          className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
-            provider === "lmstudio"
-              ? "btn-3d-primary text-white shadow-md"
-              : "text-muted-foreground hover:text-white"
-          }`}
-        >
-          LM Studio
-        </button>
+        {providers.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => setProvider(p.id)}
+            className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+              provider === p.id
+                ? "btn-3d-primary text-white shadow-md"
+                : "text-muted-foreground hover:text-white"
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
       </div>
 
       {/* Horizontal Slim Model Dropdown */}
@@ -40,7 +39,7 @@ export function HorizontalModelSelector() {
         >
           {models.length === 0 ? (
             <option value="" disabled className="bg-neutral-900 text-neutral-400">
-              Select Model
+              No models found
             </option>
           ) : (
             models.map((m) => (

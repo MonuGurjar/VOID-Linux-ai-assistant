@@ -74,7 +74,7 @@ function MainContentWrapper() {
       <AppSidebar width={leftWidth} onResizeStart={handleLeftResizeStart} />
 
       {/* Central Main Workspace Canvas */}
-      <main className="flex flex-col flex-1 min-w-0 min-h-0 bg-black/20 relative rounded-2xl border border-white/10 overflow-hidden backdrop-blur-md shadow-2xl">
+      <main className="flex flex-col flex-1 min-w-0 min-h-0 bg-transparent relative rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
         {/* Floating Expand Triggers when sidebars are collapsed */}
         {!leftOpen && (
           <button
@@ -115,10 +115,7 @@ function MainContentWrapper() {
 export function AppLayout() {
   return (
     <SidebarProvider className="flex flex-col h-screen w-screen overflow-hidden spatial-bg-3d text-foreground shadow-2xl relative select-none">
-      {/* Background Ambient Orbs */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] pointer-events-none ambient-orb-red" />
-      <div className="absolute -bottom-32 -right-32 w-[30rem] h-[30rem] bg-cyan-600/20 rounded-full blur-[140px] pointer-events-none ambient-orb-indigo" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-[40rem] bg-sky-900/15 rounded-full blur-[160px] pointer-events-none" />
+
 
       {/* Top Window TitleBar */}
       <TitleBar />

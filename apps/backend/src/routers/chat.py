@@ -15,6 +15,14 @@ from ..models.settings import Setting
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/conversations/{conversation_id}/messages", tags=["chat"])
 
+DEFAULT_PROVIDER_URLS = {
+    "ollama": "http://localhost:11434/v1",
+    "lmstudio": "http://localhost:1234/v1",
+    "vllm": "http://localhost:8000/v1",
+}
+
+DEFAULT_SYSTEM_PROMPT = "You are VOID, an intelligent, privacy-first, offline Linux AI assistant. Help the user learn, automate, and operate their Linux system safely."
+
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -33,39 +41,56 @@ async def post_message(conversation_id: int, message: Message, session: Session 
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
+    req_provider = message.provider
+    req_model = message.model
+    req_system_prompt = message.system_prompt
+
     # 1. Save user message
-    message.conversation_id = conversation_id
-    message.role = "user"
-    session.add(message)
+    user_msg = Message(
+        conversation_id=conversation_id,
+        role="user",
+        content=message.content,
+        provider=req_provider,
+        model=req_model
+    )
+    session.add(user_msg)
     
     # 2. Update conversation timestamp
     conversation.updated_at = utc_now()
     session.add(conversation)
     session.commit()
-    session.refresh(message)
 
-    # 3. Retrieve context (last 20 messages with non-empty content)
+    # 3. Retrieve context (last 20 messages)
     past_messages = session.exec(
         select(Message).where(Message.conversation_id == conversation_id).order_by(Message.created_at)
     ).all()
     
-    # Clean and format for OpenAI / Ollama payload (filter out empty or whitespace-only messages)
-    ai_messages = [
-        {"role": m.role, "content": m.content.strip()}
-        for m in past_messages[-20:]
-        if m.content and m.content.strip()
-    ]
+    # 4. Resolve Base URL & Model Name
+    if req_provider and req_provider in DEFAULT_PROVIDER_URLS:
+        base_url = DEFAULT_PROVIDER_URLS[req_provider]
+    elif req_provider == "custom":
+        url_setting = session.get(Setting, "ai_custom_url")
+        base_url = url_setting.value if url_setting else "http://localhost:8080/v1"
+    else:
+        url_setting = session.get(Setting, "ai_base_url")
+        base_url = url_setting.value if url_setting else "http://localhost:11434/v1"
 
-    # Get settings for Base URL and Model
-    url_setting = session.get(Setting, "ai_base_url")
     model_setting = session.get(Setting, "ai_model")
-    
-    base_url = url_setting.value if url_setting else "http://localhost:11434/v1"
-    model_name = model_setting.value if model_setting else "gemma:2b"
+    model_name = req_model or (model_setting.value if model_setting else "llama3.2")
+
+    # 5. Resolve System Prompt
+    system_setting = session.get(Setting, "system_prompt")
+    system_prompt = req_system_prompt or (system_setting.value if system_setting else DEFAULT_SYSTEM_PROMPT)
+
+    ai_messages = [{"role": "system", "content": system_prompt}]
+    for m in past_messages[-20:]:
+        if m.content and m.content.strip():
+            ai_messages.append({"role": m.role, "content": m.content.strip()})
 
     client = AsyncOpenAI(
         base_url=base_url,
-        api_key="local-ai"
+        api_key="local-ai",
+        timeout=60.0
     )
 
     async def generate_response():
@@ -81,23 +106,22 @@ async def post_message(conversation_id: int, message: Message, session: Session 
                 if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
                     content = chunk.choices[0].delta.content
                     full_content += content
-                    # yield SSE formatted chunk
                     yield f"data: {json.dumps({'content': content})}\n\n"
                     
         except Exception as e:
             logger.error(f"Error in LLM stream generation: {e}")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
         finally:
-            # Send done signal
             yield "data: [DONE]\n\n"
             
-            # Save assistant message to DB ONLY if we actually got non-empty response content
             if full_content and full_content.strip():
                 with Session(engine) as db_session:
                     assistant_msg = Message(
                         conversation_id=conversation_id,
                         role="assistant",
-                        content=full_content.strip()
+                        content=full_content.strip(),
+                        model=model_name,
+                        provider=req_provider
                     )
                     db_session.add(assistant_msg)
                     db_session.commit()

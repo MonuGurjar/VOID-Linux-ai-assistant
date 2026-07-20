@@ -14,6 +14,8 @@ import {
   Database,
   ShieldCheck,
   PanelRightClose,
+  Info,
+  Layers,
 } from "lucide-react";
 
 interface RightSidebarProps {
@@ -23,11 +25,58 @@ interface RightSidebarProps {
   onResizeStart?: (e: React.MouseEvent) => void;
 }
 
+interface ServiceItem {
+  id: string;
+  name: string;
+  icon: any;
+  status: "running" | "stopped";
+  instruction: string;
+}
+
 export function RightSidebar({ open = true, width = 300, onToggle, onResizeStart }: RightSidebarProps) {
-  // Simulated System Stats
   const [cpu, setCpu] = useState(18);
   const [ram, setRam] = useState(42);
   const [gpu, setGpu] = useState(23);
+
+  const [activeInfoId, setActiveInfoId] = useState<string | null>(null);
+
+  const [services, setServices] = useState<ServiceItem[]>([
+    {
+      id: "backend",
+      name: "Backend API",
+      icon: Server,
+      status: "running",
+      instruction: "Run: cd apps/backend && uv run uvicorn main:app --reload --port 8000",
+    },
+    {
+      id: "ollama",
+      name: "Ollama Engine",
+      icon: Cpu,
+      status: "running",
+      instruction: "Run command: ollama serve (Serves on http://localhost:11434)",
+    },
+    {
+      id: "lmstudio",
+      name: "LM Studio",
+      icon: Activity,
+      status: "stopped",
+      instruction: "Launch LM Studio app -> Go to Developer tab -> Click 'Start Local Server' (http://localhost:1234)",
+    },
+    {
+      id: "vllm",
+      name: "vLLM Engine",
+      icon: Layers,
+      status: "stopped",
+      instruction: "Run command: vllm serve <model_name> --port 8000",
+    },
+    {
+      id: "sqlite",
+      name: "SQLite Database",
+      icon: Database,
+      status: "running",
+      instruction: "Managed automatically by backend database session",
+    },
+  ]);
 
   // Live jitter effect for system monitor
   useEffect(() => {
@@ -36,6 +85,42 @@ export function RightSidebar({ open = true, width = 300, onToggle, onResizeStart
       setRam(Math.floor(40 + Math.random() * 5));
       setGpu(Math.floor(20 + Math.random() * 8));
     }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Poll service health
+  useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/ai/health");
+        if (res.ok) {
+          const data = await res.json();
+          setServices((prev) =>
+            prev.map((s) => ({
+              ...s,
+              status: data[s.id] === "running" ? "running" : "stopped",
+            }))
+          );
+        }
+      } catch (e) {
+        // API offline fallback checks
+        try {
+          const ollamaRes = await fetch("http://localhost:11434/api/tags");
+          setServices((prev) =>
+            prev.map((s) =>
+              s.id === "ollama" ? { ...s, status: ollamaRes.ok ? "running" : "stopped" } : s
+            )
+          );
+        } catch {
+          setServices((prev) =>
+            prev.map((s) => (s.id === "ollama" ? { ...s, status: "stopped" } : s))
+          );
+        }
+      }
+    };
+
+    checkHealth();
+    const interval = setInterval(checkHealth, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -207,45 +292,51 @@ export function RightSidebar({ open = true, width = 300, onToggle, onResizeStart
         </div>
 
         <div className="grid grid-cols-1 gap-1.5 text-[11px] font-medium">
-          <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5">
-            <span className="text-muted-foreground flex items-center gap-1.5">
-              <Server className="w-3.5 h-3.5 text-blue-300" /> Backend API
-            </span>
-            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Connected
-            </div>
-          </div>
+          {services.map((s) => {
+            const IconComp = s.icon;
+            const isRunning = s.status === "running";
+            const showInfo = activeInfoId === s.id;
 
-          <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5">
-            <span className="text-muted-foreground flex items-center gap-1.5">
-              <Cpu className="w-3.5 h-3.5 text-blue-300" /> Ollama Engine
-            </span>
-            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Running
-            </div>
-          </div>
+            return (
+              <div key={s.id} className="flex flex-col gap-1 rounded-xl bg-white/5 border border-white/5 p-2 transition-all">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground flex items-center gap-1.5">
+                    <IconComp className="w-3.5 h-3.5 text-blue-300" /> {s.name}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {isRunning ? (
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Running
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-[10px] font-semibold text-neutral-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
+                        Stopped
+                        <button
+                          onClick={() => setActiveInfoId(showInfo ? null : s.id)}
+                          className="ml-0.5 p-0.5 rounded-md hover:bg-cyan-500/20 text-cyan-400 hover:text-cyan-300 transition-colors"
+                          title="Click to see how to run this service"
+                        >
+                          <Info className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-          <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5">
-            <span className="text-muted-foreground flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-blue-300" /> LM Studio
-            </span>
-            <div className="flex items-center gap-1 text-[10px] font-semibold text-neutral-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
-              Stopped
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5">
-            <span className="text-muted-foreground flex items-center gap-1.5">
-              <Database className="w-3.5 h-3.5 text-blue-300" /> SQLite Database
-            </span>
-            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Active
-            </div>
-          </div>
+                {/* Info Card Popover when (i) icon is clicked for stopped services */}
+                {(!isRunning || showInfo) && showInfo && (
+                  <div className="mt-1 p-2 rounded-lg bg-black/60 border border-cyan-500/30 text-[10px] text-cyan-200 space-y-1 font-mono inset-3d animate-in fade-in zoom-in-95 duration-200">
+                    <div className="font-bold text-cyan-400 flex items-center gap-1">
+                      <Info className="w-3 h-3" /> How to start {s.name}:
+                    </div>
+                    <p className="text-white/90 break-all">{s.instruction}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
