@@ -32,11 +32,11 @@ export function HorizontalModelSelector() {
 
       {/* Horizontal Slim Model Dropdown */}
       <div className="relative flex items-center">
-        <Cpu className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none" />
+        <Cpu className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-cyan-400 pointer-events-none" />
         <select
           value={selectedModel}
           onChange={(e) => setSelectedModel(e.target.value)}
-          className="appearance-none bg-white/5 hover:bg-white/10 text-white font-semibold text-xs py-1.5 pl-8 pr-8 rounded-xl border border-white/10 focus:outline-none focus:border-purple-500/50 transition-all cursor-pointer max-w-[180px] sm:max-w-[220px] truncate"
+          className="appearance-none bg-white/5 hover:bg-white/10 text-white font-semibold text-xs py-1.5 pl-8 pr-8 rounded-xl border border-white/10 focus:outline-none focus:border-blue-500/50 transition-all cursor-pointer max-w-[180px] sm:max-w-[220px] truncate"
         >
           {models.length === 0 ? (
             <option value="" disabled className="bg-neutral-900 text-neutral-400">

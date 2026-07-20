@@ -35,14 +35,14 @@ export function WelcomeGrid() {
       title: "Brainstorm ideas",
       description: "Generate ideas and solutions",
       icon: BrainCircuit,
-      color: "text-purple-500",
-      borderColor: "border-purple-500/20"
+      color: "text-cyan-400",
+      borderColor: "border-cyan-500/20"
     },
     {
       title: "Analyze project",
       description: "Deep analysis of your codebase",
       icon: Folder,
-      color: "text-blue-500",
+      color: "text-blue-400",
       borderColor: "border-blue-500/20"
     }
   ];
@@ -54,7 +54,7 @@ export function WelcomeGrid() {
           <VoidLogo size={96} />
         </div>
         <h1 className="text-4xl font-black mb-3 tracking-tight text-white drop-shadow-md">
-          Welcome to <span className="bg-gradient-to-r from-purple-400 via-violet-500 to-indigo-500 bg-clip-text text-transparent">VOID</span>
+          Welcome to <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-400 bg-clip-text text-transparent">VOID</span>
         </h1>
         <p className="text-muted-foreground text-sm max-w-md font-medium">
           Your tactile, offline AI companion. Private. Local. Unlimited.
@@ -71,7 +71,7 @@ export function WelcomeGrid() {
               <item.icon className={`w-5 h-5 ${item.color} drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]`} />
             </div>
             <div>
-              <h3 className="font-bold text-xs mb-1 text-foreground tracking-wide group-hover:text-purple-400 transition-colors">{item.title}</h3>
+              <h3 className="font-bold text-xs mb-1 text-foreground tracking-wide group-hover:text-cyan-400 transition-colors">{item.title}</h3>
               <p className="text-[11px] text-muted-foreground/80 leading-relaxed font-normal">{item.description}</p>
             </div>
           </button>

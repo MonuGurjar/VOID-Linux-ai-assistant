@@ -205,9 +205,9 @@ export function ChatPage() {
                     <div className="prose prose-sm dark:prose-invert max-w-none min-h-6">
                       {msg.content === "" ? (
                         <div className="flex items-center gap-1.5 h-6">
-                          <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-bounce glow-purple-3d" />
-                          <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-bounce [animation-delay:0.2s] glow-purple-3d" />
-                          <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-bounce [animation-delay:0.4s] glow-purple-3d" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce glow-blue-3d" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:0.2s] glow-blue-3d" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:0.4s] glow-blue-3d" />
                         </div>
                       ) : (
                         <ReactMarkdown
@@ -218,7 +218,7 @@ export function ChatPage() {
                               return match ? (
                                 <div className="relative group/code rounded-xl overflow-hidden my-4 inset-3d border border-white/10 shadow-inner">
                                   <div className="flex items-center justify-between px-3.5 py-2 bg-white/5 text-xs text-muted-foreground border-b border-white/10 font-mono">
-                                    <span className="font-semibold text-purple-400">{match[1]}</span>
+                                    <span className="font-semibold text-cyan-400">{match[1]}</span>
                                     <button
                                       onClick={() => navigator.clipboard.writeText(String(children).replace(/\n$/, ""))}
                                       className="hover:text-foreground transition-colors btn-3d-secondary px-2 py-0.5 rounded text-[10px]"
@@ -232,7 +232,7 @@ export function ChatPage() {
                                 </div>
                               ) : (
                                 <code
-                                  className={`${className} bg-white/10 rounded-md px-1.5 py-0.5 text-purple-400 font-mono text-xs`}
+                                  className={`${className} bg-white/10 rounded-md px-1.5 py-0.5 text-cyan-400 font-mono text-xs`}
                                   {...props}
                                 >
                                   {children}
@@ -263,9 +263,9 @@ export function ChatPage() {
               <div className="flex items-start">
                 <div className="bg-transparent text-foreground max-w-[85%] rounded-2xl px-5 py-3.5">
                   <div className="flex items-center gap-1.5 h-6">
-                    <div className="w-2 h-2 rounded-full bg-purple-500 animate-bounce glow-purple-3d" />
-                    <div className="w-2 h-2 rounded-full bg-purple-500 animate-bounce [animation-delay:0.2s] glow-purple-3d" />
-                    <div className="w-2 h-2 rounded-full bg-purple-500 animate-bounce [animation-delay:0.4s] glow-purple-3d" />
+                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce glow-blue-3d" />
+                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce [animation-delay:0.2s] glow-blue-3d" />
+                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce [animation-delay:0.4s] glow-blue-3d" />
                   </div>
                 </div>
               </div>
@@ -294,7 +294,7 @@ export function ChatPage() {
               e.preventDefault();
               handleSend();
             }}
-            className="flex items-center gap-2.5 w-full glass-panel-3d shadow-2xl rounded-2xl p-2 px-3 border border-white/15 focus-within:border-purple-500/50 transition-all"
+            className="flex items-center gap-2.5 w-full glass-panel-3d shadow-2xl rounded-2xl p-2 px-3 border border-white/15 focus-within:border-blue-500/50 transition-all"
           >
             {/* Left corner + Icon button & Attachment */}
             <div className="flex items-center gap-1">
@@ -303,7 +303,7 @@ export function ChatPage() {
                 className="p-2 text-muted-foreground hover:text-white btn-3d-secondary rounded-xl transition-all active:scale-95"
                 title="Add attachment or tool"
               >
-                <Plus className="w-4 h-4 text-purple-400" />
+                <Plus className="w-4 h-4 text-cyan-400" />
               </button>
               <button
                 type="button"

@@ -32,11 +32,11 @@ export function SlimModelSelector() {
 
       {/* Slim Model Dropdown */}
       <div className="relative w-full">
-        <Cpu className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none" />
+        <Cpu className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-cyan-400 pointer-events-none" />
         <select
           value={selectedModel}
           onChange={(e) => setSelectedModel(e.target.value)}
-          className="w-full appearance-none bg-white/5 hover:bg-white/10 text-white font-medium text-[11px] py-1.5 pl-8 pr-7 rounded-lg border border-white/10 focus:outline-none focus:border-purple-500/50 transition-all cursor-pointer truncate"
+          className="w-full appearance-none bg-white/5 hover:bg-white/10 text-white font-medium text-[11px] py-1.5 pl-8 pr-7 rounded-lg border border-white/10 focus:outline-none focus:border-blue-500/50 transition-all cursor-pointer truncate"
         >
           {models.length === 0 ? (
             <option value="" disabled className="bg-neutral-900 text-neutral-400">
