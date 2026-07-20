@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 import asyncio
 import json
 import httpx
+import re
 
 from openai import AsyncOpenAI
 from ..db import get_session, engine
@@ -22,10 +23,18 @@ DEFAULT_PROVIDER_URLS = {
     "vllm": "http://localhost:8080/v1",
 }
 
-DEFAULT_SYSTEM_PROMPT = "You are VOID, an intelligent, privacy-first, offline Linux AI assistant. Help the user learn, automate, and operate their Linux system safely."
+DEFAULT_SYSTEM_PROMPT = (
+    "You are VOID, an intelligent, privacy-first, offline Linux AI assistant. "
+    "Help the user learn, automate, and operate their Linux system safely. "
+    "Respond directly and concisely to the user without outputting internal monologue or thinking steps."
+)
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+def strip_thinking_tags(text: str) -> str:
+    """Strips <think>...</think> tags if present in text."""
+    return re.sub(r"<think>[\s\S]*?<\/think>", "", text).strip()
 
 @router.get("/", response_model=List[Message])
 def get_messages(conversation_id: int, session: Session = Depends(get_session)):
@@ -77,12 +86,15 @@ async def post_message(conversation_id: int, message: Message, session: Session 
     ai_messages = [{"role": "system", "content": system_prompt}]
     for m in past_messages[-20:]:
         if m.content and m.content.strip():
-            ai_messages.append({"role": m.role, "content": m.content.strip()})
+            # Strip any residual thinking tags from context
+            clean_content = strip_thinking_tags(m.content.strip())
+            if clean_content:
+                ai_messages.append({"role": m.role, "content": clean_content})
 
     async def generate_response():
         full_content = ""
         
-        # Method A: Ollama Native Streaming API
+        # Method A: Ollama Native Streaming API (Clean response content only)
         if req_provider == "ollama":
             try:
                 async with httpx.AsyncClient(timeout=300.0) as http_client:
@@ -105,10 +117,13 @@ async def post_message(conversation_id: int, message: Message, session: Session 
                             try:
                                 data = json.loads(line)
                                 msg = data.get("message", {})
-                                content_piece = msg.get("content", "") or msg.get("thinking", "")
+                                content_piece = msg.get("content", "")
+
+                                # Ignore internal thinking stream, stream final response content only
                                 if content_piece:
                                     full_content += content_piece
                                     yield f"data: {json.dumps({'content': content_piece})}\n\n"
+
                                 if data.get("done", False):
                                     break
                             except Exception:
@@ -118,12 +133,13 @@ async def post_message(conversation_id: int, message: Message, session: Session 
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
             finally:
                 yield "data: [DONE]\n\n"
-                if full_content and full_content.strip():
+                clean_final = strip_thinking_tags(full_content)
+                if clean_final and clean_final.strip():
                     with Session(engine) as db_session:
                         assistant_msg = Message(
                             conversation_id=conversation_id,
                             role="assistant",
-                            content=full_content.strip(),
+                            content=clean_final.strip(),
                             model=model_name,
                             provider=req_provider
                         )
@@ -157,27 +173,24 @@ async def post_message(conversation_id: int, message: Message, session: Session 
             async for chunk in stream:
                 if chunk.choices and len(chunk.choices) > 0 and chunk.choices[0].delta:
                     delta = chunk.choices[0].delta
-                    content = (
-                        getattr(delta, "content", None) or
-                        getattr(delta, "reasoning_content", None) or
-                        getattr(delta, "reasoning", None) or
-                        getattr(delta, "thinking", None)
-                    )
-                    if content:
-                        full_content += content
-                        yield f"data: {json.dumps({'content': content})}\n\n"
+                    content_piece = getattr(delta, "content", None)
+
+                    if content_piece:
+                        full_content += content_piece
+                        yield f"data: {json.dumps({'content': content_piece})}\n\n"
                     
         except Exception as e:
             logger.error(f"Error in LLM stream generation: {e}")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
         finally:
             yield "data: [DONE]\n\n"
-            if full_content and full_content.strip():
+            clean_final = strip_thinking_tags(full_content)
+            if clean_final and clean_final.strip():
                 with Session(engine) as db_session:
                     assistant_msg = Message(
                         conversation_id=conversation_id,
                         role="assistant",
-                        content=full_content.strip(),
+                        content=clean_final.strip(),
                         model=model_name,
                         provider=req_provider
                     )

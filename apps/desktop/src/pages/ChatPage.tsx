@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
-import { Send, Plus, Paperclip, Mic } from "lucide-react";
+import { Send, Plus, Paperclip, Mic, Brain, ChevronDown } from "lucide-react";
 
 import { WelcomeGrid } from "@/components/layout/WelcomeGrid";
 import { HorizontalModelSelector } from "@/components/layout/HorizontalModelSelector";
@@ -15,6 +15,75 @@ interface Message {
   created_at?: string;
 }
 
+function parseMessageParts(content: string): { thinking: string; response: string } {
+  if (!content) return { thinking: "", response: "" };
+
+  // 1. Check for <think>...</think> tags
+  const thinkMatch = content.match(/<think>([\s\S]*?)<\/think>/i);
+  if (thinkMatch) {
+    const thinking = thinkMatch[1].trim();
+    const response = content.replace(/<think>[\s\S]*?<\/think>/i, "").trim();
+    return { thinking, response };
+  }
+
+  // 2. Check for 🧠 **Thought Process** header
+  if (content.includes("🧠 **Thought Process**")) {
+    const parts = content.split("---");
+    if (parts.length >= 2) {
+      const thinking = parts[0]
+        .replace(/>\s*🧠\s*\*\*Thought Process\*\*/gi, "")
+        .replace(/^>\s*/gm, "")
+        .trim();
+      const response = parts.slice(1).join("---").trim();
+      return { thinking, response };
+    }
+  }
+
+  // 3. Check for leading monologue patterns (Okay, the user... / Let's see...)
+  const thinkingPattern = /^(Okay|Let's|The user|Hmm|Wait|First, I|I should|I need)([\s\S]*?)(Hello!|Hi!|Hey!|Welcome|Sure!|Here is|Certainly!)/i;
+  if (thinkingPattern.test(content)) {
+    const match = content.match(thinkingPattern);
+    if (match) {
+      const thinking = (match[1] + match[2]).trim();
+      const response = match[3] + content.slice(match[0].length);
+      return { thinking, response };
+    }
+  }
+
+  return { thinking: "", response: content };
+}
+
+function ThinkingAccordion({ thinkingText }: { thinkingText: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="mb-3.5 rounded-xl border border-white/10 bg-black/40 overflow-hidden text-xs">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 hover:bg-white/5 transition-all select-none cursor-pointer"
+      >
+        <div className="flex items-center gap-1.5">
+          <Brain className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+          <span>Thought Process</span>
+          <span className="text-[10px] text-muted-foreground font-mono">({thinkingText.length} chars)</span>
+        </div>
+        <ChevronDown
+          className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="px-3.5 py-2.5 text-[11px] font-mono text-muted-foreground/90 border-t border-white/10 bg-black/60 leading-relaxed overflow-x-auto max-h-60 overflow-y-auto inset-3d select-text">
+          {thinkingText}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ChatPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -23,7 +92,6 @@ export function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Model selection synced with Left Sidebar
   const { provider: activeProvider, selectedModel: activeModel } = useModelSelection();
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -31,7 +99,6 @@ export function ChatPage() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
-  // Fetch messages if we load an existing chat
   useEffect(() => {
     if (id) {
       if (isSendingRef.current) return;
@@ -50,7 +117,6 @@ export function ChatPage() {
     }
   }, [id, API_URL]);
 
-  // Auto-scroll chat message container safely without scrolling window body
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
@@ -66,7 +132,6 @@ export function ChatPage() {
     setInput("");
     setError(null);
 
-    // Optimistic UI update
     const userMsg: Message = { role: "user", content: userMessage, created_at: new Date().toISOString() };
     const assistantMsg: Message = { role: "assistant", content: "", created_at: new Date().toISOString() };
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
@@ -183,81 +248,93 @@ export function ChatPage() {
           <WelcomeGrid />
         </div>
       ) : (
-        <div className="flex-1 min-h-0 overflow-y-auto" ref={chatContainerRef}>
-          <div className="max-w-4xl mx-auto space-y-6 p-4 lg:p-8 pb-6">
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex flex-col ${
-                  msg.role === "user" ? "items-end" : "items-start"
-                }`}
-              >
+        <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 md:px-8 py-4 space-y-6 min-h-0 no-scrollbar">
+          <div className="max-w-4xl mx-auto space-y-6">
+            {messages.map((msg, index) => {
+              const { thinking, response } = msg.role === "assistant" ? parseMessageParts(msg.content) : { thinking: "", response: msg.content };
+
+              return (
                 <div
-                  className={`max-w-[85%] rounded-2xl px-5 py-3.5 shadow-xl backdrop-blur-md transition-all ${
-                    msg.role === "user"
-                      ? "btn-3d-primary text-white font-medium rounded-tr-xs"
-                      : "card-3d-object text-foreground rounded-tl-xs"
-                  }`}
+                  key={index}
+                  className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
                 >
-                  {msg.role === "user" ? (
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
-                  ) : (
-                    <div className="prose prose-sm dark:prose-invert max-w-none min-h-6">
-                      {msg.content === "" ? (
-                        <div className="flex items-center gap-1.5 h-6">
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce glow-blue-3d" />
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:0.2s] glow-blue-3d" />
-                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:0.4s] glow-blue-3d" />
-                        </div>
-                      ) : (
-                        <ReactMarkdown
-                          rehypePlugins={[rehypeHighlight]}
-                          components={{
-                            code({ node, className, children, ...props }) {
-                              const match = /language-(\w+)/.exec(className || "");
-                              return match ? (
-                                <div className="relative group/code rounded-xl overflow-hidden my-4 inset-3d border border-white/10 shadow-inner">
-                                  <div className="flex items-center justify-between px-3.5 py-2 bg-white/5 text-xs text-muted-foreground border-b border-white/10 font-mono">
-                                    <span className="font-semibold text-cyan-400">{match[1]}</span>
-                                    <button
-                                      onClick={() => navigator.clipboard.writeText(String(children).replace(/\n$/, ""))}
-                                      className="hover:text-foreground transition-colors btn-3d-secondary px-2 py-0.5 rounded text-[10px]"
-                                    >
-                                      Copy Code
-                                    </button>
-                                  </div>
-                                  <code className={className} {...props}>
-                                    {children}
-                                  </code>
-                                </div>
-                              ) : (
-                                <code
-                                  className={`${className} bg-white/10 rounded-md px-1.5 py-0.5 text-cyan-400 font-mono text-xs`}
-                                  {...props}
-                                >
-                                  {children}
-                                </code>
-                              );
-                            },
-                          }}
-                        >
-                          {msg.content}
-                        </ReactMarkdown>
-                      )}
-                    </div>
-                  )}
-                  {msg.created_at && (
-                    <div
-                      className={`text-[10px] text-muted-foreground/80 mt-2 ${
-                        msg.role === "user" ? "text-right text-white/80" : "text-left"
-                      }`}
-                    >
-                      {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </div>
-                  )}
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-5 py-3.5 shadow-xl backdrop-blur-md transition-all ${
+                      msg.role === "user"
+                        ? "btn-3d-primary text-white font-medium rounded-tr-xs"
+                        : "card-3d-object text-foreground rounded-tl-xs"
+                    }`}
+                  >
+                    {msg.role === "user" ? (
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                    ) : (
+                      <div className="prose prose-sm dark:prose-invert max-w-none min-h-6">
+                        {msg.content === "" ? (
+                          <div className="flex items-center gap-1.5 h-6">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce glow-blue-3d" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:0.2s] glow-blue-3d" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:0.4s] glow-blue-3d" />
+                          </div>
+                        ) : (
+                          <>
+                            {/* Collapsible Collapsed-by-default Thinking Accordion */}
+                            {thinking && <ThinkingAccordion thinkingText={thinking} />}
+                            
+                            {/* Main Answer Content */}
+                            {response && (
+                              <ReactMarkdown
+                                rehypePlugins={[rehypeHighlight]}
+                                components={{
+                                  code({ node, className, children, ...props }) {
+                                    const match = /language-(\w+)/.exec(className || "");
+                                    return match ? (
+                                      <div className="relative group/code rounded-xl overflow-hidden my-4 inset-3d border border-white/10 shadow-inner">
+                                        <div className="flex items-center justify-between px-3.5 py-2 bg-white/5 text-xs text-muted-foreground border-b border-white/10 font-mono">
+                                          <span className="font-semibold text-cyan-400">{match[1]}</span>
+                                          <button
+                                            onClick={() =>
+                                              navigator.clipboard.writeText(String(children).replace(/\n$/, ""))
+                                            }
+                                            className="hover:text-foreground transition-colors btn-3d-secondary px-2 py-0.5 rounded text-[10px]"
+                                          >
+                                            Copy Code
+                                          </button>
+                                        </div>
+                                        <code className={className} {...props}>
+                                          {children}
+                                        </code>
+                                      </div>
+                                    ) : (
+                                      <code
+                                        className={`${className} bg-white/10 rounded-md px-1.5 py-0.5 text-cyan-400 font-mono text-xs`}
+                                        {...props}
+                                      >
+                                        {children}
+                                      </code>
+                                    );
+                                  },
+                                }}
+                              >
+                                {response}
+                              </ReactMarkdown>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                    {msg.created_at && (
+                      <div
+                        className={`text-[10px] text-muted-foreground/80 mt-2 ${
+                          msg.role === "user" ? "text-right text-white/80" : "text-left"
+                        }`}
+                      >
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {isLoading && (
               <div className="flex items-start">
@@ -294,9 +371,8 @@ export function ChatPage() {
               e.preventDefault();
               handleSend();
             }}
-            className="flex items-center gap-2.5 w-full glass-panel-3d shadow-2xl rounded-2xl p-2 px-3 border border-white/15 focus-within:border-blue-500/50 transition-all"
+            className="flex items-center gap-2.5 w-full glass-panel-glossy shadow-2xl rounded-2xl p-2 px-3 border border-white/15 focus-within:border-blue-500/50 transition-all"
           >
-            {/* Left corner + Icon button & Attachment */}
             <div className="flex items-center gap-1">
               <button
                 type="button"
@@ -314,29 +390,28 @@ export function ChatPage() {
               </button>
             </div>
 
-            {/* Slim Input Field */}
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask VOID anything..."
-              className="flex-1 bg-transparent px-2 py-1 text-sm outline-none placeholder:text-muted-foreground/60 text-foreground font-medium"
+              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none px-1 py-1 font-medium"
             />
 
-            {/* Right corner controls: Mic & Send Button */}
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                className="p-2 text-muted-foreground hover:text-white transition-colors"
-                title="Voice Input"
+                className="p-2 text-muted-foreground hover:text-white btn-3d-secondary rounded-xl transition-all active:scale-95 hidden sm:flex"
+                title="Voice input"
               >
-                <Mic className="w-4 h-4" />
+                <Mic className="w-4 h-4 text-cyan-400" />
               </button>
               <button
                 type="submit"
                 disabled={!input.trim() || isLoading}
-                className="btn-3d-primary p-2.5 rounded-xl text-white shadow-lg disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all flex items-center justify-center"
+                className="btn-3d-primary p-2.5 rounded-xl text-white disabled:opacity-40 disabled:hover:transform-none transition-all active:scale-95 shadow-md flex items-center justify-center"
+                title="Send message"
               >
                 <Send className="w-4 h-4" />
               </button>
