@@ -102,11 +102,12 @@ async def post_message(conversation_id: int, message: Message, session: Session 
             sys_data = await SystemInfoTool().execute()
             system_telemetry_suffix = (
                 f"\n\n[LIVE LINUX SYSTEM TELEMETRY]\n"
-                f"- OS / Machine: {sys_data.get('os')} ({sys_data.get('release')}, {sys_data.get('machine')})\n"
-                f"- CPU Usage: {sys_data.get('cpu_usage_percent')}%\n"
+                f"- OS / Distro: {sys_data.get('distro')} (Kernel {sys_data.get('kernel_release')}, {sys_data.get('machine')})\n"
+                f"- CPU Model: {sys_data.get('cpu_model')} ({sys_data.get('cpu_cores_physical')} physical cores / {sys_data.get('cpu_cores_logical')} logical threads)\n"
+                f"- CPU Load: {sys_data.get('cpu_usage_percent')}%\n"
                 f"- RAM Usage: {sys_data.get('ram_used_gb')} GB / {sys_data.get('ram_total_gb')} GB ({sys_data.get('ram_percent')}%)\n"
                 f"- Disk Space: {sys_data.get('disk_free_gb')} GB free out of {sys_data.get('disk_total_gb')} GB ({sys_data.get('disk_percent')}% used)\n"
-                f"Answer the user's question directly using this live system telemetry data."
+                f"Answer the user's question directly using this live hardware & system telemetry data."
             )
         except Exception as e:
             logger.warning(f"Failed to auto-fetch system telemetry: {e}")

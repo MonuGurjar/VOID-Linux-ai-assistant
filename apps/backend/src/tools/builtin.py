@@ -211,7 +211,7 @@ class SystemInfoTool(Tool):
 
     @property
     def description(self) -> str:
-        return "Get real-time Linux system diagnostics: CPU, RAM, Disk usage, OS distribution, and Uptime."
+        return "Get real-time Linux system diagnostics: CPU model name, RAM, Disk usage, OS distribution, and Uptime."
 
     @property
     def parameters_schema(self) -> Dict[str, Any]:
@@ -224,14 +224,38 @@ class SystemInfoTool(Tool):
     def requires_approval(self) -> bool:
         return False  # Read-only safe system diagnostics
 
+    def _get_cpu_model(self) -> str:
+        try:
+            with open("/proc/cpuinfo", "r") as f:
+                for line in f:
+                    if "model name" in line:
+                        return line.split(":")[1].strip()
+        except Exception:
+            pass
+        return platform.processor() or "x86_64 CPU"
+
+    def _get_distro_name(self) -> str:
+        try:
+            with open("/etc/os-release", "r") as f:
+                for line in f:
+                    if line.startswith("PRETTY_NAME="):
+                        return line.split("=")[1].strip('"\n')
+        except Exception:
+            pass
+        return f"Linux {platform.release()}"
+
     async def execute(self, **kwargs) -> Dict[str, Any]:
         try:
             mem = psutil.virtual_memory()
             disk = psutil.disk_usage("/")
             return {
                 "os": platform.system(),
-                "release": platform.release(),
+                "distro": self._get_distro_name(),
+                "kernel_release": platform.release(),
                 "machine": platform.machine(),
+                "cpu_model": self._get_cpu_model(),
+                "cpu_cores_physical": psutil.cpu_count(logical=False) or 1,
+                "cpu_cores_logical": psutil.cpu_count(logical=True) or 1,
                 "cpu_usage_percent": psutil.cpu_percent(interval=0.1),
                 "ram_total_gb": round(mem.total / (1024**3), 2),
                 "ram_used_gb": round(mem.used / (1024**3), 2),
