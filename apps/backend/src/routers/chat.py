@@ -33,8 +33,14 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 def strip_thinking_tags(text: str) -> str:
-    """Strips <think>...</think> tags if present in text."""
-    return re.sub(r"<think>[\s\S]*?<\/think>", "", text).strip()
+    """Strips <think>...</think> tags and raw monologue thinking prefixes from text."""
+    clean = re.sub(r"<think>[\s\S]*?<\/think>", "", text).strip()
+    # Strip un-tagged leading thinking monologue if model outputs it directly
+    pattern = r"^(Okay|Let's|The user|Hmm|Wait|First, I|I should|I need)([\s\S]*?)(Hello!|Hi!|Hey!|Welcome|Sure!|Here is|Certainly!)"
+    match = re.search(pattern, clean, re.IGNORECASE)
+    if match:
+        clean = match.group(3) + clean[match.end():]
+    return clean.strip()
 
 @router.get("/", response_model=List[Message])
 def get_messages(conversation_id: int, session: Session = Depends(get_session)):
@@ -43,6 +49,10 @@ def get_messages(conversation_id: int, session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="Conversation not found")
         
     messages = session.exec(select(Message).where(Message.conversation_id == conversation_id).order_by(Message.created_at)).all()
+    # Clean thinking tags before returning stored messages to UI
+    for m in messages:
+        if m.role == "assistant" and m.content:
+            m.content = strip_thinking_tags(m.content)
     return messages
 
 @router.post("/")
@@ -86,15 +96,15 @@ async def post_message(conversation_id: int, message: Message, session: Session 
     ai_messages = [{"role": "system", "content": system_prompt}]
     for m in past_messages[-20:]:
         if m.content and m.content.strip():
-            # Strip any residual thinking tags from context
             clean_content = strip_thinking_tags(m.content.strip())
             if clean_content:
                 ai_messages.append({"role": m.role, "content": clean_content})
 
     async def generate_response():
-        full_content = ""
+        full_thinking = ""
+        full_response = ""
         
-        # Method A: Ollama Native Streaming API (Clean response content only)
+        # Method A: Ollama Native Streaming API with structured thinking payload
         if req_provider == "ollama":
             try:
                 async with httpx.AsyncClient(timeout=300.0) as http_client:
@@ -117,11 +127,16 @@ async def post_message(conversation_id: int, message: Message, session: Session 
                             try:
                                 data = json.loads(line)
                                 msg = data.get("message", {})
+                                thinking_piece = msg.get("thinking", "")
                                 content_piece = msg.get("content", "")
 
-                                # Ignore internal thinking stream, stream final response content only
-                                if content_piece:
-                                    full_content += content_piece
+                                if thinking_piece:
+                                    full_thinking += thinking_piece
+                                    # Send thinking explicitly under 'thinking' key
+                                    yield f"data: {json.dumps({'thinking': thinking_piece})}\n\n"
+                                elif content_piece:
+                                    full_response += content_piece
+                                    # Send response explicitly under 'content' key
                                     yield f"data: {json.dumps({'content': content_piece})}\n\n"
 
                                 if data.get("done", False):
@@ -133,13 +148,16 @@ async def post_message(conversation_id: int, message: Message, session: Session 
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
             finally:
                 yield "data: [DONE]\n\n"
-                clean_final = strip_thinking_tags(full_content)
-                if clean_final and clean_final.strip():
+                
+                # Format final stored content with <think> tag if thinking exists, otherwise clean response
+                final_saved_content = f"<think>\n{full_thinking.strip()}\n</think>\n\n{full_response.strip()}" if full_thinking.strip() else full_response.strip()
+                
+                if final_saved_content and final_saved_content.strip():
                     with Session(engine) as db_session:
                         assistant_msg = Message(
                             conversation_id=conversation_id,
                             role="assistant",
-                            content=clean_final.strip(),
+                            content=final_saved_content.strip(),
                             model=model_name,
                             provider=req_provider
                         )
@@ -173,10 +191,14 @@ async def post_message(conversation_id: int, message: Message, session: Session 
             async for chunk in stream:
                 if chunk.choices and len(chunk.choices) > 0 and chunk.choices[0].delta:
                     delta = chunk.choices[0].delta
+                    thinking_piece = getattr(delta, "reasoning_content", None) or getattr(delta, "thinking", None)
                     content_piece = getattr(delta, "content", None)
 
-                    if content_piece:
-                        full_content += content_piece
+                    if thinking_piece:
+                        full_thinking += thinking_piece
+                        yield f"data: {json.dumps({'thinking': thinking_piece})}\n\n"
+                    elif content_piece:
+                        full_response += content_piece
                         yield f"data: {json.dumps({'content': content_piece})}\n\n"
                     
         except Exception as e:
@@ -184,13 +206,13 @@ async def post_message(conversation_id: int, message: Message, session: Session 
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
         finally:
             yield "data: [DONE]\n\n"
-            clean_final = strip_thinking_tags(full_content)
-            if clean_final and clean_final.strip():
+            final_saved_content = f"<think>\n{full_thinking.strip()}\n</think>\n\n{full_response.strip()}" if full_thinking.strip() else full_response.strip()
+            if final_saved_content and final_saved_content.strip():
                 with Session(engine) as db_session:
                     assistant_msg = Message(
                         conversation_id=conversation_id,
                         role="assistant",
-                        content=clean_final.strip(),
+                        content=final_saved_content.strip(),
                         model=model_name,
                         provider=req_provider
                     )

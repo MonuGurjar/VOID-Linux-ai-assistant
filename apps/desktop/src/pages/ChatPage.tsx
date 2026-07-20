@@ -18,15 +18,21 @@ interface Message {
 function parseMessageParts(content: string): { thinking: string; response: string } {
   if (!content) return { thinking: "", response: "" };
 
-  // 1. Check for <think>...</think> tags
-  const thinkMatch = content.match(/<think>([\s\S]*?)<\/think>/i);
-  if (thinkMatch) {
-    const thinking = thinkMatch[1].trim();
-    const response = content.replace(/<think>[\s\S]*?<\/think>/i, "").trim();
-    return { thinking, response };
+  // 1. Explicit <think>...</think> tags
+  if (content.includes("<think>")) {
+    const thinkEnd = content.indexOf("</think>");
+    if (thinkEnd !== -1) {
+      const thinking = content.slice(content.indexOf("<think>") + 7, thinkEnd).trim();
+      const response = content.slice(thinkEnd + 8).trim();
+      return { thinking, response };
+    } else {
+      // Currently streaming inside <think> tag
+      const thinking = content.slice(content.indexOf("<think>") + 7).trim();
+      return { thinking, response: "" };
+    }
   }
 
-  // 2. Check for 🧠 **Thought Process** header
+  // 2. Explicit 🧠 **Thought Process** block
   if (content.includes("🧠 **Thought Process**")) {
     const parts = content.split("---");
     if (parts.length >= 2) {
@@ -39,21 +45,26 @@ function parseMessageParts(content: string): { thinking: string; response: strin
     }
   }
 
-  // 3. Check for leading monologue patterns (Okay, the user... / Let's see...)
-  const thinkingPattern = /^(Okay|Let's|The user|Hmm|Wait|First, I|I should|I need)([\s\S]*?)(Hello!|Hi!|Hey!|Welcome|Sure!|Here is|Certainly!)/i;
-  if (thinkingPattern.test(content)) {
-    const match = content.match(thinkingPattern);
-    if (match) {
-      const thinking = (match[1] + match[2]).trim();
-      const response = match[3] + content.slice(match[0].length);
+  // 3. Monologue thinking prefix (e.g. "Okay, the user...", "Let's see...", "I need to...")
+  const monologueStartPattern = /^\s*(Okay|Let's|The user|Hmm|Wait|First,|I should|I need|I will|Thinking)/i;
+  if (monologueStartPattern.test(content)) {
+    // Search for where the actual response answer starts
+    const answerMarkerMatch = content.match(/(Hello!|Hi!|Hey!|Welcome|Sure!|Here is|Certainly!|Okay!|\n\n(?=[A-Z0-9]))/i);
+    
+    if (answerMarkerMatch && answerMarkerMatch.index !== undefined && answerMarkerMatch.index > 5) {
+      const thinking = content.slice(0, answerMarkerMatch.index).trim();
+      const response = content.slice(answerMarkerMatch.index).trim();
       return { thinking, response };
+    } else {
+      // Still streaming thinking monologue — keep response EMPTY so no monologue leaks into body!
+      return { thinking: content.trim(), response: "" };
     }
   }
 
   return { thinking: "", response: content };
 }
 
-function ThinkingAccordion({ thinkingText }: { thinkingText: string }) {
+function ThinkingAccordion({ thinkingText, isDone }: { thinkingText: string; isDone?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -65,8 +76,10 @@ function ThinkingAccordion({ thinkingText }: { thinkingText: string }) {
       >
         <div className="flex items-center gap-1.5">
           <Brain className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-          <span>Thought Process</span>
-          <span className="text-[10px] text-muted-foreground font-mono">({thinkingText.length} chars)</span>
+          <span>{isDone ? "Thought Process" : "Thinking..."}</span>
+          <span className="text-[10px] text-muted-foreground font-mono">
+            {isDone ? `(${thinkingText.length} chars)` : "• live"}
+          </span>
         </div>
         <ChevronDown
           className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${
@@ -167,7 +180,8 @@ export function ChatPage() {
 
       const reader = msgRes.body.getReader();
       const decoder = new TextDecoder();
-      let streamContent = "";
+      let thinkingAccumulator = "";
+      let responseAccumulator = "";
 
       while (true) {
         const { value, done } = await reader.read();
@@ -185,26 +199,35 @@ export function ChatPage() {
             try {
               const data = JSON.parse(dataStr);
               if (data.error) throw new Error(data.error);
-              if (data.content) {
-                streamContent += data.content;
-                setMessages((prev) => {
-                  const newMsgs = [...prev];
-                  newMsgs[newMsgs.length - 1] = {
-                    role: "assistant",
-                    content: streamContent,
-                    created_at: new Date().toISOString(),
-                  };
-                  return newMsgs;
-                });
+
+              if (data.thinking) {
+                thinkingAccumulator += data.thinking;
               }
+              if (data.content) {
+                responseAccumulator += data.content;
+              }
+
+              const formattedPayload = thinkingAccumulator
+                ? `<think>\n${thinkingAccumulator}\n</think>\n\n${responseAccumulator}`
+                : responseAccumulator;
+
+              setMessages((prev) => {
+                const newMsgs = [...prev];
+                newMsgs[newMsgs.length - 1] = {
+                  role: "assistant",
+                  content: formattedPayload,
+                  created_at: new Date().toISOString(),
+                };
+                return newMsgs;
+              });
             } catch (e) {
               if (dataStr && dataStr !== "[DONE]") {
-                streamContent += dataStr;
+                responseAccumulator += dataStr;
                 setMessages((prev) => {
                   const newMsgs = [...prev];
                   newMsgs[newMsgs.length - 1] = {
                     role: "assistant",
-                    content: streamContent,
+                    content: responseAccumulator,
                     created_at: new Date().toISOString(),
                   };
                   return newMsgs;
@@ -278,7 +301,12 @@ export function ChatPage() {
                         ) : (
                           <>
                             {/* Collapsible Collapsed-by-default Thinking Accordion */}
-                            {thinking && <ThinkingAccordion thinkingText={thinking} />}
+                            {thinking && (
+                              <ThinkingAccordion
+                                thinkingText={thinking}
+                                isDone={!isLoading || index < messages.length - 1}
+                              />
+                            )}
                             
                             {/* Main Answer Content */}
                             {response && (
