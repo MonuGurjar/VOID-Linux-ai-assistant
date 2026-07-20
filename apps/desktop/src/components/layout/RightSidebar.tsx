@@ -13,9 +13,17 @@ import {
   Server,
   Database,
   ShieldCheck,
+  PanelRightClose,
 } from "lucide-react";
 
-export function RightSidebar() {
+interface RightSidebarProps {
+  open?: boolean;
+  width?: number;
+  onToggle?: () => void;
+  onResizeStart?: (e: React.MouseEvent) => void;
+}
+
+export function RightSidebar({ open = true, width = 300, onToggle, onResizeStart }: RightSidebarProps) {
   // Simulated System Stats
   const [cpu, setCpu] = useState(18);
   const [ram, setRam] = useState(42);
@@ -41,7 +49,23 @@ export function RightSidebar() {
   ];
 
   return (
-    <aside className="w-72 sm:w-80 shrink-0 h-full border-l border-white/10 glass-panel-3d shadow-2xl flex flex-col justify-between overflow-y-auto no-scrollbar p-4 space-y-5 select-none">
+    <aside
+      style={{ width: open ? `${width}px` : "0px" }}
+      className={`shrink-0 h-full rounded-2xl border border-white/15 glass-panel-glossy shadow-2xl flex flex-col justify-between overflow-y-auto no-scrollbar p-4 space-y-5 select-none transition-all duration-300 ease-in-out relative z-20 ${
+        open ? "opacity-100" : "w-0 opacity-0 border-0 pointer-events-none p-0"
+      }`}
+    >
+      {/* Left Edge Resize Handle */}
+      {open && onResizeStart && (
+        <div
+          onMouseDown={onResizeStart}
+          className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-cyan-400/60 active:bg-cyan-400 transition-colors z-30 group flex items-center justify-center"
+          title="Drag to resize right sidebar"
+        >
+          <div className="w-0.5 h-8 bg-white/30 rounded-full group-hover:bg-cyan-200 group-hover:scale-y-125 transition-all" />
+        </div>
+      )}
+
       {/* 1. SYSTEM MONITOR */}
       <div className="card-3d-object p-3.5 space-y-3">
         <div className="flex items-center justify-between">
@@ -51,9 +75,20 @@ export function RightSidebar() {
               System Monitor
             </span>
           </div>
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
-            <span className="text-[10px] font-bold text-emerald-400 uppercase">LIVE</span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+              <span className="text-[10px] font-bold text-emerald-400 uppercase">LIVE</span>
+            </div>
+            {onToggle && (
+              <button
+                onClick={onToggle}
+                className="p-1 rounded-lg text-muted-foreground hover:text-white hover:bg-white/10 transition-all active:scale-95"
+                title="Collapse Right Sidebar"
+              >
+                <PanelRightClose className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 

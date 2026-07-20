@@ -87,7 +87,12 @@ const pinnedItems = [
   { id: "pinned-notes", title: "Research Notes" },
 ];
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  width?: number;
+  onResizeStart?: (e: React.MouseEvent) => void;
+}
+
+export function AppSidebar({ width = 280, onResizeStart }: AppSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { open, toggleSidebar } = useSidebar();
@@ -245,10 +250,21 @@ export function AppSidebar() {
 
   return (
     <aside
-      className={`shrink-0 h-full border-r border-white/10 glass-panel-3d shadow-2xl flex flex-col justify-between transition-all duration-300 ease-in-out overflow-hidden ${
-        open ? "w-64 sm:w-72 opacity-100" : "w-0 opacity-0 border-r-0 pointer-events-none"
+      style={{ width: open ? `${width}px` : "0px" }}
+      className={`shrink-0 h-full rounded-2xl border border-white/15 glass-panel-glossy shadow-2xl flex flex-col justify-between transition-all duration-300 ease-in-out overflow-hidden relative z-20 ${
+        open ? "opacity-100" : "w-0 opacity-0 border-0 pointer-events-none p-0"
       }`}
     >
+      {/* Right Edge Resize Handle */}
+      {open && onResizeStart && (
+        <div
+          onMouseDown={onResizeStart}
+          className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-cyan-400/60 active:bg-cyan-400 transition-colors z-30 group flex items-center justify-center"
+          title="Drag to resize sidebar"
+        >
+          <div className="w-0.5 h-8 bg-white/30 rounded-full group-hover:bg-cyan-200 group-hover:scale-y-125 transition-all" />
+        </div>
+      )}
       {/* Permanent Fixed Header: Logo, New Chat Button & Search */}
       <div className="p-4 flex flex-col gap-3 shrink-0 border-b border-white/10">
         <div className="flex items-center justify-between px-1">
