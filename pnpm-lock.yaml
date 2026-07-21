@@ -6,6 +6,8 @@ settings:
 
 importers:
 
+  .: {}
+
   apps/desktop:
     dependencies:
       '@base-ui/react':

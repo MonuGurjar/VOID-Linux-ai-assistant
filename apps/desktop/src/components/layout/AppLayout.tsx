@@ -74,7 +74,7 @@ function MainContentWrapper() {
       <AppSidebar width={leftWidth} onResizeStart={handleLeftResizeStart} />
 
       {/* Central Main Workspace Canvas */}
-      <main className="flex flex-col flex-1 min-w-0 min-h-0 bg-transparent relative rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+      <main className="flex flex-col flex-1 min-w-0 min-h-0 bg-transparent relative rounded-2xl border border-white/10 overflow-hidden shadow-2xl transition-all duration-300 cubic-bezier(0.16,1,0.3,1)">
         {/* Floating Expand Triggers when sidebars are collapsed */}
         {!leftOpen && (
           <button

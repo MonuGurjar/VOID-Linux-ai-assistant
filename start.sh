@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-# VOID AI Assistant — Unified Service Launcher
-# Runs FastAPI Backend (Port 8000) and Desktop Frontend concurrently with 1 command.
+# VOID AI Assistant — Unified Desktop Window Launcher
+# Runs FastAPI Backend (Port 8000) and opens VOID in a separate Desktop Window.
 # ==============================================================================
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$ROOT_DIR/apps/backend"
 DESKTOP_DIR="$ROOT_DIR/apps/desktop"
 
-# Check if Tauri mode requested (--tauri or -t)
-RUN_TAURI=false
-if [[ "$1" == "--tauri" || "$1" == "-t" ]]; then
-  RUN_TAURI=true
+# Web mode flag check (--web or -w)
+RUN_WEB=false
+if [[ "$1" == "--web" || "$1" == "-w" ]]; then
+  RUN_WEB=true
 fi
 
 # Detect Node Package Manager
@@ -31,13 +31,13 @@ else
 fi
 
 echo "========================================================"
-echo " 🌌 Launching VOID AI Assistant Services "
+echo " 🌌 Opening VOID AI Assistant Desktop Window "
 echo "========================================================"
 
 # Trap SIGINT (Ctrl+C) and SIGTERM to kill all child processes cleanly
 cleanup() {
   echo ""
-  echo "🛑 Stopping VOID Assistant processes..."
+  echo "🛑 Closing VOID Assistant window and services..."
   if [ -n "$BACKEND_PID" ]; then
     kill "$BACKEND_PID" 2>/dev/null
   fi
@@ -55,7 +55,7 @@ cd "$BACKEND_DIR" || exit 1
 uv run uvicorn src.main:app --host 127.0.0.1 --port 8000 --reload &
 BACKEND_PID=$!
 
-# Wait for backend to be ready
+# Wait for backend readiness
 echo "⏳ Waiting for backend API readiness..."
 for i in {1..15}; do
   if curl -s http://127.0.0.1:8000/ > /dev/null 2>&1; then
@@ -65,25 +65,37 @@ for i in {1..15}; do
   sleep 0.8
 done
 
-# 2. Start Frontend App
+# 2. Launch Separate App Window
 cd "$DESKTOP_DIR" || exit 1
 
-if [ "$RUN_TAURI" = true ]; then
-  echo "🚀 [2/2] Launching Tauri Desktop Window..."
-  $PM_TAURI &
-  FRONTEND_PID=$!
-else
-  echo "🚀 [2/2] Launching Frontend Interface..."
+if [ "$RUN_WEB" = true ]; then
+  echo "🚀 [2/2] Opening Web App Window..."
   $PM_DEV &
   FRONTEND_PID=$!
+  sleep 2
+  if command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "http://localhost:5173" 2>/dev/null &
+  fi
+else
+  echo "🖥️ [2/2] Launching Native Tauri Desktop Application Window..."
+  $PM_TAURI &
+  FRONTEND_PID=$!
+  
+  # Optional fallback if tauri fails to start after 5 seconds: auto open browser window
+  (
+    sleep 6
+    if ! curl -s http://localhost:5173/ > /dev/null 2>&1; then
+      echo "🌐 Opening web app window fallback..."
+      $PM_DEV --open &
+    fi
+  ) &
 fi
 
 echo "========================================================"
-echo " 🟢 VOID AI Assistant is running! "
+echo " 🟢 VOID AI Assistant Window is active! "
 echo " ➜ Backend API: http://127.0.0.1:8000 "
 echo " ➜ Frontend UI: http://localhost:5173 "
-echo " 💡 Press Ctrl+C anytime to stop all services. "
+echo " 💡 Press Ctrl+C in this terminal to close the window. "
 echo "========================================================"
 
-# Keep script alive and wait for child processes
 wait

@@ -251,10 +251,16 @@ export function AppSidebar({ width = 280, onResizeStart }: AppSidebarProps) {
   return (
     <aside
       style={{ width: open ? `${width}px` : "0px" }}
-      className={`shrink-0 h-full rounded-2xl border border-white/15 glass-panel-glossy shadow-2xl flex flex-col justify-between transition-all duration-300 ease-in-out overflow-hidden relative z-20 ${
-        open ? "opacity-100" : "w-0 opacity-0 border-0 pointer-events-none p-0"
+      className={`shrink-0 h-full rounded-2xl border glass-panel-glossy shadow-2xl overflow-hidden select-none transition-all duration-300 cubic-bezier(0.16,1,0.3,1) relative z-20 will-change-[width,opacity] transform-gpu ${
+        open
+          ? "opacity-100 border-white/15"
+          : "opacity-0 border-transparent pointer-events-none"
       }`}
     >
+      <div
+        style={{ width: `${width}px` }}
+        className="h-full flex flex-col justify-between"
+      >
       {/* Right Edge Resize Handle */}
       {open && onResizeStart && (
         <div
@@ -389,6 +395,7 @@ export function AppSidebar({ width = 280, onResizeStart }: AppSidebarProps) {
           </div>
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
+      </div>
       </div>
     </aside>
   );

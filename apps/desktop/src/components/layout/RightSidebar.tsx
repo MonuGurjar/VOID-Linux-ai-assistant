@@ -136,10 +136,16 @@ export function RightSidebar({ open = true, width = 300, onToggle, onResizeStart
   return (
     <aside
       style={{ width: open ? `${width}px` : "0px" }}
-      className={`shrink-0 h-full rounded-2xl border border-white/15 glass-panel-glossy shadow-2xl flex flex-col justify-between overflow-y-auto no-scrollbar p-4 space-y-5 select-none transition-all duration-300 ease-in-out relative z-20 ${
-        open ? "opacity-100" : "w-0 opacity-0 border-0 pointer-events-none p-0"
+      className={`shrink-0 h-full rounded-2xl border glass-panel-glossy shadow-2xl overflow-hidden select-none transition-all duration-300 cubic-bezier(0.16,1,0.3,1) relative z-20 will-change-[width,opacity] transform-gpu ${
+        open
+          ? "opacity-100 border-white/15"
+          : "opacity-0 border-transparent pointer-events-none"
       }`}
     >
+      <div
+        style={{ width: `${width}px` }}
+        className="h-full flex flex-col justify-between overflow-y-auto no-scrollbar p-4 space-y-5"
+      >
       {/* Left Edge Resize Handle */}
       {open && onResizeStart && (
         <div
@@ -349,6 +355,7 @@ export function RightSidebar({ open = true, width = 300, onToggle, onResizeStart
         <div className="text-right text-[10px] font-bold text-blue-400 tracking-wider">
           &mdash; VOID
         </div>
+      </div>
       </div>
     </aside>
   );
