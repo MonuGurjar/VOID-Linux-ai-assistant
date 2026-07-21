@@ -147,11 +147,12 @@ class FilesystemListTool(Tool):
             "required": ["directory_path"]
         }
 
-    async def execute(self, directory_path: str, **kwargs) -> Dict[str, Any]:
+    async def execute(self, directory_path: str = None, path: str = None, directory: str = None, **kwargs) -> Dict[str, Any]:
+        target = directory_path or path or directory or "."
         try:
-            full_p = os.path.abspath(directory_path)
+            full_p = os.path.abspath(os.path.expanduser(target))
             if not os.path.exists(full_p):
-                return {"error": f"Directory not found: {directory_path}", "success": False}
+                return {"error": f"Directory not found: {target}", "success": False}
 
             items = []
             for item in os.listdir(full_p):

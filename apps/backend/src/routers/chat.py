@@ -93,14 +93,38 @@ async def post_message(conversation_id: int, message: Message, session: Session 
     system_setting = session.get(Setting, "system_prompt")
     base_system_prompt = req_system_prompt or (system_setting.value if system_setting else DEFAULT_SYSTEM_PROMPT)
 
-    # Auto-enrich system questions with live Linux system telemetry
+    # Auto-enrich user questions with live Linux tool execution
     user_query_lower = message.content.lower()
-    system_telemetry_suffix = ""
+    tool_context_suffix = ""
+
+    # A. Live Filesystem Listing (Downloads, Home, Directories)
+    if any(k in user_query_lower for k in ["download", "downloads", "list files", "show files", "my files", "ls ", "directory", "folder"]):
+        try:
+            import os
+            from ..tools.builtin import FilesystemListTool
+            target_path = os.path.expanduser("~/Downloads") if "download" in user_query_lower else os.path.expanduser("~")
+            files_data = await FilesystemListTool().execute(path=target_path)
+            if files_data.get("success"):
+                items = files_data.get("items", [])
+                file_summary = "\n".join([
+                    f"- {'📁' if f['is_dir'] else '📄'} {f['name']} ({round((f.get('size') or 0)/1024, 1)} KB)"
+                    for f in items[:50]
+                ])
+                tool_context_suffix += (
+                    f"\n\n[LIVE FILESYSTEM TOOL RESULT — {target_path}]\n"
+                    f"Files retrieved directly from user's Linux system:\n"
+                    f"{file_summary}\n\n"
+                    f"CRITICAL INSTRUCTION: List these actual real files directly in your answer to the user."
+                )
+        except Exception as e:
+            logger.warning(f"Failed to auto-fetch filesystem: {e}")
+
+    # B. Live Linux System Telemetry
     if any(k in user_query_lower for k in ["linux", "distro", "distribution", "disk", "free space", "ram", "cpu", "system info", "os", "specs", "hardware", "kernel"]):
         try:
             from ..tools.builtin import SystemInfoTool
             sys_data = await SystemInfoTool().execute()
-            system_telemetry_suffix = (
+            tool_context_suffix += (
                 f"\n\n[LIVE LINUX SYSTEM TELEMETRY]\n"
                 f"- OS / Distro: {sys_data.get('distro')} (Kernel {sys_data.get('kernel_release')}, {sys_data.get('machine')})\n"
                 f"- CPU Model: {sys_data.get('cpu_model')} ({sys_data.get('cpu_cores_physical')} physical cores / {sys_data.get('cpu_cores_logical')} logical threads)\n"
@@ -112,7 +136,22 @@ async def post_message(conversation_id: int, message: Message, session: Session 
         except Exception as e:
             logger.warning(f"Failed to auto-fetch system telemetry: {e}")
 
-    full_system_prompt = base_system_prompt + system_telemetry_suffix
+    # C. Live Git Status Inspection
+    if any(k in user_query_lower for k in ["git", "commit", "branch", "repository"]):
+        try:
+            from ..tools.builtin import GitStatusTool
+            git_data = await GitStatusTool().execute()
+            if git_data.get("success"):
+                tool_context_suffix += (
+                    f"\n\n[LIVE GIT STATUS]\n"
+                    f"- Branch: {git_data.get('branch')}\n"
+                    f"- Modified Files: {git_data.get('modified_files')}\n"
+                    f"- Recent Commits:\n" + "\n".join([f"  • {c}" for c in git_data.get("recent_commits", [])[:5]])
+                )
+        except Exception as e:
+            logger.warning(f"Failed to auto-fetch git status: {e}")
+
+    full_system_prompt = base_system_prompt + tool_context_suffix
 
     ai_messages = [{"role": "system", "content": full_system_prompt}]
     for m in past_messages[-20:]:
