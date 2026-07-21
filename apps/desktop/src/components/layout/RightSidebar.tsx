@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   Cpu,
   Activity,
@@ -134,13 +135,19 @@ export function RightSidebar({ open = true, width = 300, onToggle, onResizeStart
   ];
 
   return (
-    <aside
-      style={{ width: open ? `${width}px` : "0px" }}
-      className={`shrink-0 h-full rounded-2xl border sidebar-solid-panel shadow-2xl overflow-hidden select-none transition-all duration-300 cubic-bezier(0.16,1,0.3,1) relative z-20 will-change-[width,opacity] transform-gpu ${
-        open
-          ? "opacity-100 border-white/15"
-          : "opacity-0 border-transparent pointer-events-none"
-      }`}
+    <motion.aside
+      initial={false}
+      animate={{
+        width: open ? width : 0,
+        opacity: open ? 1 : 0,
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 450,
+        damping: 36,
+        mass: 0.8,
+      }}
+      className="shrink-0 h-full rounded-2xl border border-white/15 sidebar-solid-panel shadow-2xl overflow-hidden select-none relative z-20 will-change-[width,opacity]"
     >
       <div
         style={{ width: `${width}px` }}
@@ -357,6 +364,6 @@ export function RightSidebar({ open = true, width = 300, onToggle, onResizeStart
         </div>
       </div>
       </div>
-    </aside>
+    </motion.aside>
   );
 }
