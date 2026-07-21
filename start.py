@@ -5,6 +5,7 @@ Runs both FastAPI Backend and Desktop Frontend with 1 command.
 """
 import sys
 import os
+import shutil
 import subprocess
 import time
 import signal
@@ -15,6 +16,17 @@ BACKEND_DIR = os.path.join(ROOT_DIR, "apps", "backend")
 DESKTOP_DIR = os.path.join(ROOT_DIR, "apps", "desktop")
 
 run_tauri = "--tauri" in sys.argv or "-t" in sys.argv
+
+# Package Manager Detection
+if shutil.which("pnpm"):
+    frontend_cmd = ["pnpm", "tauri", "dev"] if run_tauri else ["pnpm", "dev"]
+elif shutil.which("npx"):
+    frontend_cmd = ["npx", "pnpm", "tauri", "dev"] if run_tauri else ["npx", "pnpm", "dev"]
+elif shutil.which("npm"):
+    frontend_cmd = ["npm", "run", "tauri", "--", "dev"] if run_tauri else ["npm", "run", "dev"]
+else:
+    print("❌ Error: No Node.js package manager (pnpm/npx/npm) found in PATH.")
+    sys.exit(1)
 
 print("========================================================")
 print(" 🌌 Launching VOID AI Assistant Services (Python Launcher)")
@@ -56,8 +68,7 @@ for _ in range(15):
 
 # 2. Start Frontend
 print(f"🚀 [2/2] Launching {'Tauri Desktop' if run_tauri else 'Frontend UI'}...")
-cmd = ["pnpm", "tauri", "dev"] if run_tauri else ["pnpm", "dev"]
-frontend_proc = subprocess.Popen(cmd, cwd=DESKTOP_DIR)
+frontend_proc = subprocess.Popen(frontend_cmd, cwd=DESKTOP_DIR)
 
 print("========================================================")
 print(" 🟢 VOID AI Assistant is running!")

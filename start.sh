@@ -15,6 +15,21 @@ if [[ "$1" == "--tauri" || "$1" == "-t" ]]; then
   RUN_TAURI=true
 fi
 
+# Detect Node Package Manager
+if command -v pnpm >/dev/null 2>&1; then
+  PM_DEV="pnpm dev"
+  PM_TAURI="pnpm tauri dev"
+elif command -v npx >/dev/null 2>&1; then
+  PM_DEV="npx pnpm dev"
+  PM_TAURI="npx pnpm tauri dev"
+elif command -v npm >/dev/null 2>&1; then
+  PM_DEV="npm run dev"
+  PM_TAURI="npm run tauri -- dev"
+else
+  echo "❌ Error: No Node.js package manager (pnpm/npx/npm) found in PATH."
+  exit 1
+fi
+
 echo "========================================================"
 echo " 🌌 Launching VOID AI Assistant Services "
 echo "========================================================"
@@ -55,11 +70,11 @@ cd "$DESKTOP_DIR" || exit 1
 
 if [ "$RUN_TAURI" = true ]; then
   echo "🚀 [2/2] Launching Tauri Desktop Window..."
-  pnpm tauri dev &
+  $PM_TAURI &
   FRONTEND_PID=$!
 else
   echo "🚀 [2/2] Launching Frontend Interface..."
-  pnpm dev &
+  $PM_DEV &
   FRONTEND_PID=$!
 fi
 

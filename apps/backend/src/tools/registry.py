@@ -54,10 +54,9 @@ class ToolRegistry:
         self._tools: Dict[str, Tool] = {}
 
     def register(self, tool: Tool):
-        if tool.name in self._tools:
-            logger.warning(f"Overwriting tool registration: {tool.name}")
+        if tool.name not in self._tools:
+            logger.info(f"Registered tool: {tool.name}")
         self._tools[tool.name] = tool
-        logger.info(f"Registered tool: {tool.name}")
 
     def get_tool(self, name: str) -> Optional[Tool]:
         return self._tools.get(name)
