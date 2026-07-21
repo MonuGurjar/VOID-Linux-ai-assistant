@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Minus, Square, X, Settings2, ChevronDown } from 'lucide-react';
+import { Palette, Minus, Square, X, Settings2, ChevronDown } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { PanelLeft } from 'lucide-react';
 import { VoidLogo } from '@/components/ui/VoidLogo';
+import { useTheme } from '@/hooks/useTheme';
 
 export function TitleBar() {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   let toggleSidebar = () => {};
   try {
     const sidebar = useSidebar();
@@ -93,6 +95,16 @@ export function TitleBar() {
       </div>
 
       <div className="flex items-center h-full pointer-events-auto gap-0.5 px-1">
+        <button
+          onClick={toggleTheme}
+          className="h-7 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 rounded hover:bg-white/10 active:scale-95 border border-white/10 bg-white/5"
+          title={`Switch Theme (Current: ${theme === 'cosmic' ? 'Cosmic Blue' : 'Obsidian Silver'})`}
+        >
+          <Palette className={`w-3.5 h-3.5 ${theme === 'obsidian' ? 'text-slate-100' : 'text-cyan-400'}`} />
+          <span className="text-[10px] hidden sm:inline font-mono uppercase tracking-wider">
+            {theme === 'cosmic' ? 'Cosmic' : 'Obsidian'}
+          </span>
+        </button>
         <button
           onClick={() => navigate('/settings')}
           className="h-7 w-8 text-muted-foreground hover:text-foreground transition-all flex items-center justify-center rounded hover:bg-white/10 active:scale-95"

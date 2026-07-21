@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { Save } from "lucide-react";
+import { Save, Palette, Check } from "lucide-react";
+import { useTheme } from "@/hooks/useTheme";
 
 export function SettingsPage() {
+  const { theme: wallpaperTheme, setTheme: setWallpaperTheme } = useTheme();
   const [settings, setSettings] = useState<Record<string, string>>({
     theme: "dark",
     fontSize: "14px",
@@ -71,11 +73,65 @@ export function SettingsPage() {
       
       <div className="space-y-6">
         <section className="card-3d-object p-6 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-red-400 border-b border-white/10 pb-3">Appearance</h2>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-red-400 border-b border-white/10 pb-3 flex items-center justify-between">
+            <span>Appearance & Wallpapers</span>
+            <Palette className="w-4 h-4 text-cyan-400" />
+          </h2>
+
+          <div className="space-y-3">
+            <label className="text-xs font-semibold text-muted-foreground">Wallpaper Theme</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Cosmic Blue Theme Option */}
+              <button
+                type="button"
+                onClick={() => setWallpaperTheme("cosmic")}
+                className={`relative rounded-2xl p-4 border text-left transition-all overflow-hidden group cursor-pointer ${
+                  wallpaperTheme === "cosmic"
+                    ? "border-blue-500 bg-blue-950/40 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+                    : "border-white/10 bg-white/5 hover:border-white/20"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-cyan-400">Cosmic Blue (bg.png)</span>
+                  {wallpaperTheme === "cosmic" && (
+                    <span className="p-1 rounded-full bg-blue-500 text-white">
+                      <Check className="w-3 h-3" />
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground/80">
+                  Electric neon cyan & deep blue space singularity theme.
+                </p>
+              </button>
+
+              {/* Obsidian Silver Theme Option */}
+              <button
+                type="button"
+                onClick={() => setWallpaperTheme("obsidian")}
+                className={`relative rounded-2xl p-4 border text-left transition-all overflow-hidden group cursor-pointer ${
+                  wallpaperTheme === "obsidian"
+                    ? "border-slate-300 bg-zinc-900/60 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                    : "border-white/10 bg-white/5 hover:border-white/20"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-200">Obsidian Silver (bg1.png)</span>
+                  {wallpaperTheme === "obsidian" && (
+                    <span className="p-1 rounded-full bg-slate-200 text-black">
+                      <Check className="w-3 h-3" />
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground/80">
+                  Ultra-sleek monochromatic obsidian black hole & platinum theme.
+                </p>
+              </button>
+            </div>
+          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Theme</label>
+              <label className="text-xs font-semibold text-muted-foreground">Mode</label>
               <select 
                 value={settings.theme}
                 onChange={e => setSettings({...settings, theme: e.target.value})}

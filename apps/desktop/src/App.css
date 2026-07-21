@@ -275,7 +275,7 @@
     0 0 30px rgba(37, 99, 235, 0.35);
 }
 
-/* Spatial Cosmic Entity Background System */
+/* Spatial Cosmic Entity & Obsidian Background System */
 
 .spatial-bg-3d {
   background-color: #030712;
@@ -284,6 +284,46 @@
   background-position: center top;
   background-repeat: no-repeat;
   background-attachment: fixed;
+  transition: background-image 0.4s ease-in-out;
+}
+
+[data-wallpaper-theme="obsidian"] .spatial-bg-3d {
+  background-color: #050505;
+  background-image: url('/bg1.png');
+}
+
+[data-wallpaper-theme="obsidian"] {
+  --primary: #52525b;
+  --primary-foreground: #ffffff;
+  --accent: #27272a;
+  --accent-foreground: #ffffff;
+  --ring: #e4e4e7;
+}
+
+[data-wallpaper-theme="obsidian"] .text-cyan-400 {
+  color: #e4e4e7;
+}
+
+[data-wallpaper-theme="obsidian"] .hover\:text-cyan-300:hover {
+  color: #ffffff;
+}
+
+[data-wallpaper-theme="obsidian"] .btn-3d-primary {
+  background: linear-gradient(135deg, #a1a1aa 0%, #3f3f46 50%, #18181b 100%);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 6px 18px -2px rgba(255, 255, 255, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.4);
+}
+
+[data-wallpaper-theme="obsidian"] .btn-3d-primary:hover {
+  background: linear-gradient(135deg, #ffffff 0%, #71717a 50%, #27272a 100%);
+  box-shadow:
+    0 10px 24px -2px rgba(255, 255, 255, 0.35),
+    0 4px 8px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 @keyframes ambientFloat {
