@@ -9,10 +9,12 @@ import json
 import httpx
 import re
 
+import os
 from openai import AsyncOpenAI
 from ..db import get_session, engine
 from ..models.chat import Message, Conversation
 from ..models.settings import Setting
+from ..tools.registry import registry
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/conversations/{conversation_id}/messages", tags=["chat"])
@@ -97,27 +99,51 @@ async def post_message(conversation_id: int, message: Message, session: Session 
     user_query_lower = message.content.lower()
     tool_context_suffix = ""
 
-    # A. Live Filesystem Listing (Downloads, Home, Directories)
-    if any(k in user_query_lower for k in ["download", "downloads", "list files", "show files", "my files", "ls ", "directory", "folder"]):
+    # 1. Dynamic Folder & Filesystem Requests (Pictures, Downloads, Documents, Desktop, Music, Videos, etc.)
+    dir_keywords = {
+        "picture": "~/Pictures",
+        "photo": "~/Pictures",
+        "image": "~/Pictures",
+        "download": "~/Downloads",
+        "document": "~/Documents",
+        "desktop": "~/Desktop",
+        "music": "~/Music",
+        "video": "~/Videos",
+        "home": "~",
+    }
+
+    target_path = None
+    for kw, p_path in dir_keywords.items():
+        if kw in user_query_lower:
+            target_path = p_path
+            break
+
+    path_match = re.search(r"(\~?\/[a-zA-Z0-9_\-\.\/]+)", message.content)
+    if path_match:
+        target_path = path_match.group(1)
+
+    if target_path or any(k in user_query_lower for k in ["list files", "show files", "my files", "ls ", "directory", "folder"]):
+        if not target_path:
+            target_path = "~"
         try:
-            import os
             from ..tools.builtin import FilesystemListTool
-            target_path = os.path.expanduser("~/Downloads") if "download" in user_query_lower else os.path.expanduser("~")
-            files_data = await FilesystemListTool().execute(path=target_path)
+            full_path = os.path.abspath(os.path.expanduser(target_path))
+            files_data = await FilesystemListTool().execute(directory_path=full_path)
             if files_data.get("success"):
                 items = files_data.get("items", [])
                 file_summary = "\n".join([
-                    f"- {'📁' if f['is_dir'] else '📄'} {f['name']} ({round((f.get('size') or 0)/1024, 1)} KB)"
+                    f"- {'📁 [DIR]' if f['is_dir'] else '📄'} {f['name']} ({round((f.get('size') or 0)/1024, 1)} KB)"
                     for f in items[:50]
                 ])
                 tool_context_suffix += (
-                    f"\n\n[LIVE FILESYSTEM TOOL RESULT — {target_path}]\n"
-                    f"Files retrieved directly from user's Linux system:\n"
-                    f"{file_summary}\n\n"
-                    f"CRITICAL INSTRUCTION: List these actual real files directly in your answer to the user."
+                    f"\n\n[LIVE FILESYSTEM TOOL RESULT — {full_path}]\n"
+                    f"Directory Path: {full_path}\n"
+                    f"Total Items Found: {len(items)}\n"
+                    f"Real Files Retrieved from User System:\n{file_summary}\n\n"
+                    f"CRITICAL SYSTEM DIRECTIVE: The user asked to list/show files in '{full_path}'. List these actual real files directly in your answer! Do NOT output fake commands or generic explanations!"
                 )
         except Exception as e:
-            logger.warning(f"Failed to auto-fetch filesystem: {e}")
+            logger.warning(f"Failed to auto-fetch filesystem for {target_path}: {e}")
 
     # B. Live Linux System Telemetry
     if any(k in user_query_lower for k in ["linux", "distro", "distribution", "disk", "free space", "ram", "cpu", "system info", "os", "specs", "hardware", "kernel"]):
@@ -174,6 +200,7 @@ async def post_message(conversation_id: int, message: Message, session: Session 
                         json={
                             "model": model_name,
                             "messages": ai_messages,
+                            "tools": registry.get_openai_tools(),
                             "stream": True
                         }
                     ) as response:
@@ -242,9 +269,11 @@ async def post_message(conversation_id: int, message: Message, session: Session 
         )
 
         try:
+            openai_tools = registry.get_openai_tools()
             stream = await client.chat.completions.create(
                 model=model_name,
                 messages=ai_messages,
+                tools=openai_tools if len(openai_tools) > 0 else None,
                 stream=True
             )
             
