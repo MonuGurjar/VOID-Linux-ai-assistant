@@ -1,0 +1,14 @@
+{
+  "name": "void-ai-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Intelligent Linux AI Assistant",
+  "scripts": {
+    "start": "./start.sh",
+    "dev": "./start.sh",
+    "dev:tauri": "./start.sh --tauri",
+    "backend": "cd apps/backend && uv run uvicorn src.main:app --host 127.0.0.1 --port 8000 --reload",
+    "frontend": "cd apps/desktop && pnpm dev",
+    "tauri": "cd apps/desktop && pnpm tauri dev"
+  }
+}
