@@ -8,7 +8,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-0.1.0-blueviolet?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/badge/platform-Linux-8A2BE2?style=flat-square&logo=linux&logoColor=white" alt="Platform" />
-  <img src="https://img.shields.io/badge/license-MIT-purple?style=flat-square" alt="License" />
+  <img src="https://img.shields.io/badge/license-GPLv3-purple?style=flat-square" alt="License" />
   <img src="https://img.shields.io/badge/status-Active%20Development-violet?style=flat-square" alt="Status" />
 </p>
 
