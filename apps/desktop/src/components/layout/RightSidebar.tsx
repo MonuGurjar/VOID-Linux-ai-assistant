@@ -136,7 +136,7 @@ export function RightSidebar({ open = true, width = 300, onToggle, onResizeStart
   return (
     <aside
       style={{ width: open ? `${width}px` : "0px" }}
-      className={`shrink-0 h-full rounded-2xl border glass-panel-glossy shadow-2xl overflow-hidden select-none transition-all duration-300 cubic-bezier(0.16,1,0.3,1) relative z-20 will-change-[width,opacity] transform-gpu ${
+      className={`shrink-0 h-full rounded-2xl border sidebar-solid-panel shadow-2xl overflow-hidden select-none transition-all duration-300 cubic-bezier(0.16,1,0.3,1) relative z-20 will-change-[width,opacity] transform-gpu ${
         open
           ? "opacity-100 border-white/15"
           : "opacity-0 border-transparent pointer-events-none"

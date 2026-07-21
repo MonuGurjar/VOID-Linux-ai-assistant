@@ -11,7 +11,7 @@ export function HorizontalModelSelector() {
   ];
 
   return (
-    <div className="flex items-center gap-2 glass-panel-glossy p-1.5 px-2.5 rounded-2xl shadow-xl border border-white/15">
+    <div className="flex items-center gap-2 sidebar-solid-panel p-1.5 px-2.5 rounded-2xl shadow-xl border border-white/15">
       {/* Horizontal Multi-Provider Pill Toggle */}
       <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl inset-3d">
         {providers.map((p) => (

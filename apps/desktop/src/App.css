@@ -292,38 +292,114 @@
   background-image: url('/bg1.png');
 }
 
+/* Ultra-Fast Non-Glassmorphic Sidebar Panels (Zero Backdrop Blur Overhead) */
+.sidebar-solid-panel {
+  background: rgba(6, 12, 24, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 16px 40px -6px rgba(0, 0, 0, 0.75);
+  position: relative;
+}
+
+[data-wallpaper-theme="obsidian"] .sidebar-solid-panel {
+  background: rgba(12, 12, 16, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 40px -6px rgba(0, 0, 0, 0.9);
+}
+
 [data-wallpaper-theme="obsidian"] {
-  --primary: #52525b;
-  --primary-foreground: #ffffff;
+  --primary: #e4e4e7;
+  --primary-foreground: #09090b;
   --accent: #27272a;
   --accent-foreground: #ffffff;
   --ring: #e4e4e7;
 }
 
-[data-wallpaper-theme="obsidian"] .text-cyan-400 {
-  color: #e4e4e7;
+/* Comprehensive Obsidian Color Theme Mappings (Cyan/Blue -> Platinum/Silver) */
+[data-wallpaper-theme="obsidian"] .text-cyan-400,
+[data-wallpaper-theme="obsidian"] .text-cyan-300,
+[data-wallpaper-theme="obsidian"] .text-blue-400,
+[data-wallpaper-theme="obsidian"] .text-blue-300,
+[data-wallpaper-theme="obsidian"] .text-indigo-400,
+[data-wallpaper-theme="obsidian"] .text-sky-400 {
+  color: #e4e4e7 !important;
 }
 
-[data-wallpaper-theme="obsidian"] .hover\:text-cyan-300:hover {
-  color: #ffffff;
+[data-wallpaper-theme="obsidian"] .border-cyan-500\/30,
+[data-wallpaper-theme="obsidian"] .border-cyan-500\/20,
+[data-wallpaper-theme="obsidian"] .border-blue-500\/30,
+[data-wallpaper-theme="obsidian"] .border-blue-500\/20,
+[data-wallpaper-theme="obsidian"] .focus\:border-blue-500\/50:focus {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+[data-wallpaper-theme="obsidian"] .bg-blue-950\/40,
+[data-wallpaper-theme="obsidian"] .bg-blue-900\/20,
+[data-wallpaper-theme="obsidian"] .bg-cyan-950\/30,
+[data-wallpaper-theme="obsidian"] .bg-blue-600\/20 {
+  background-color: rgba(39, 39, 42, 0.6) !important;
+}
+
+[data-wallpaper-theme="obsidian"] .bg-blue-600,
+[data-wallpaper-theme="obsidian"] .bg-blue-500,
+[data-wallpaper-theme="obsidian"] .bg-cyan-400 {
+  background-color: #e4e4e7 !important;
+}
+
+[data-wallpaper-theme="obsidian"] .from-cyan-400 {
+  --tw-gradient-from: #ffffff !important;
+  --tw-gradient-stops: var(--tw-gradient-via-stops, #ffffff 0%, var(--tw-gradient-to)) !important;
+}
+
+[data-wallpaper-theme="obsidian"] .via-blue-500 {
+  --tw-gradient-to: rgb(212 212 216 / 0) !important;
+  --tw-gradient-stops: var(--tw-gradient-via-stops, #e4e4e7 50%, var(--tw-gradient-to)) !important;
+}
+
+[data-wallpaper-theme="obsidian"] .to-indigo-400 {
+  --tw-gradient-to: #a1a1aa !important;
+}
+
+[data-wallpaper-theme="obsidian"] .card-3d-object {
+  background: linear-gradient(145deg, rgba(28, 28, 35, 0.85), rgba(16, 16, 20, 0.95)) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-wallpaper-theme="obsidian"] .card-3d-object:hover {
+  border-top-color: rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 18px 36px -6px rgba(0, 0, 0, 0.85), 0 8px 24px -4px rgba(255, 255, 255, 0.18) !important;
 }
 
 [data-wallpaper-theme="obsidian"] .btn-3d-primary {
-  background: linear-gradient(135deg, #a1a1aa 0%, #3f3f46 50%, #18181b 100%);
-  border-color: rgba(255, 255, 255, 0.35);
+  background: linear-gradient(135deg, #f4f4f5 0%, #a1a1aa 50%, #52525b 100%) !important;
+  color: #09090b !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
   box-shadow:
-    0 6px 18px -2px rgba(255, 255, 255, 0.2),
+    0 6px 18px -2px rgba(255, 255, 255, 0.25),
     0 2px 4px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.4);
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.3) !important;
 }
 
 [data-wallpaper-theme="obsidian"] .btn-3d-primary:hover {
-  background: linear-gradient(135deg, #ffffff 0%, #71717a 50%, #27272a 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #e4e4e7 50%, #71717a 100%) !important;
   box-shadow:
-    0 10px 24px -2px rgba(255, 255, 255, 0.35),
+    0 10px 24px -2px rgba(255, 255, 255, 0.4),
     0 4px 8px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-wallpaper-theme="obsidian"] .btn-3d-secondary {
+  background: linear-gradient(145deg, rgba(39, 39, 42, 0.85), rgba(24, 24, 27, 0.95)) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-wallpaper-theme="obsidian"] .btn-3d-secondary:hover {
+  background: linear-gradient(145deg, rgba(63, 63, 70, 0.9), rgba(39, 39, 42, 0.95)) !important;
+}
+
+[data-wallpaper-theme="obsidian"] .inset-3d {
+  background: rgba(18, 18, 22, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 @keyframes ambientFloat {

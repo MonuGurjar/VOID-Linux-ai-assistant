@@ -69,7 +69,7 @@ export function TitleBar() {
   return (
     <div
       data-tauri-drag-region
-      className="h-10 flex justify-between items-center glass-panel-3d select-none sticky top-0 z-50 shadow-md"
+      className="h-10 flex justify-between items-center sidebar-solid-panel select-none sticky top-0 z-50 shadow-md"
     >
       <div className="flex items-center h-full gap-2 pointer-events-auto">
         <button
