@@ -167,32 +167,47 @@ export function SettingsPage() {
         </section>
 
         <section className="bg-[#12181F] border border-emerald-500/20 rounded-2xl p-6 space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400 border-b border-emerald-500/20 pb-3 font-mono">Local AI Integration</h2>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400 border-b border-emerald-500/20 pb-3 font-mono flex items-center justify-between">
+            <span>Google Gemini AI Integration (Default Provider)</span>
+            <span className="text-[10px] bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-sans">Active</span>
+          </h2>
           
           <div className="grid gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-gray-400">Base URL</label>
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-semibold text-gray-300">Google Gemini API Key</label>
+                <a 
+                  href="https://aistudio.google.com/" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="text-[11px] text-emerald-400 hover:underline flex items-center gap-1 font-medium"
+                >
+                  Get free key at Google AI Studio ↗
+                </a>
+              </div>
               <input 
-                type="text" 
-                value={settings.ai_base_url || ""}
-                onChange={e => setSettings({...settings, ai_base_url: e.target.value})}
-                placeholder="http://localhost:11434/v1"
-                className="w-full bg-[#0B0F12] border border-emerald-500/30 rounded-xl p-2.5 text-xs font-mono outline-none text-white"
+                type="password" 
+                value={settings.gemini_api_key || ""}
+                onChange={e => setSettings({...settings, gemini_api_key: e.target.value})}
+                placeholder="AIzaSy..."
+                className="w-full bg-[#0B0F12] border border-emerald-500/30 focus:border-emerald-400 rounded-xl p-2.5 text-xs font-mono outline-none text-white transition-all shadow-inner"
               />
-              <p className="text-[11px] text-gray-500">Ollama: http://localhost:11434/v1 | LM Studio: http://localhost:1234/v1</p>
+              <p className="text-[11px] text-gray-400">
+                Your Gemini API Key is stored locally in your SQLite database and never leaves your machine.
+              </p>
             </div>
-            
+
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-gray-400">Default Model</label>
+              <label className="text-xs font-semibold text-gray-300">Default Gemini Model</label>
               <select 
-                value={settings.ai_model || ""}
+                value={settings.ai_model || "gemini-2.5-flash"}
                 onChange={e => setSettings({...settings, ai_model: e.target.value})}
                 className="w-full bg-[#0B0F12] border border-emerald-500/30 rounded-xl p-2.5 text-xs text-white font-medium outline-none cursor-pointer"
               >
-                <option value="" disabled className="bg-[#0B0F12]">Select a model</option>
-                {models.map(m => (
-                  <option key={m.id} value={m.id} className="bg-[#0B0F12]">{m.name}</option>
-                ))}
+                <option value="gemini-2.5-flash" className="bg-[#0B0F12]">Gemini 2.5 Flash (Recommended - Ultra Fast)</option>
+                <option value="gemini-2.5-pro" className="bg-[#0B0F12]">Gemini 2.5 Pro (Deep Reasoning)</option>
+                <option value="gemini-2.0-flash" className="bg-[#0B0F12]">Gemini 2.0 Flash</option>
+                <option value="gemini-1.5-flash" className="bg-[#0B0F12]">Gemini 1.5 Flash</option>
               </select>
             </div>
           </div>

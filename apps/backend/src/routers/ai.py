@@ -10,28 +10,38 @@ from ..models.settings import Setting
 router = APIRouter(prefix="/ai", tags=["ai"])
 
 DEFAULT_PROVIDER_URLS = {
-    "ollama": "http://localhost:11434/v1",
+    "gemini": "https://generativelanguage.googleapis.com/v1beta/openai/",
     "lmstudio": "http://localhost:1234/v1",
     "vllm": "http://localhost:8080/v1",
 }
 
+GEMINI_MODELS = [
+    {"id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash (Recommended)"},
+    {"id": "gemini-2.5-pro", "name": "Gemini 2.5 Pro"},
+    {"id": "gemini-2.0-flash", "name": "Gemini 2.0 Flash"},
+    {"id": "gemini-1.5-flash", "name": "Gemini 1.5 Flash"},
+]
+
 @router.get("/models")
 async def get_models(
-    provider: Optional[str] = Query("ollama"),
+    provider: Optional[str] = Query("gemini"),
     custom_url: Optional[str] = Query(None),
     session: Session = Depends(get_session)
 ):
     models = []
     
+    if provider == "gemini" or not provider:
+        return GEMINI_MODELS
+
     if provider == "custom" and custom_url:
         base_url = custom_url.rstrip("/") + "/v1" if not custom_url.endswith("/v1") else custom_url
     elif provider in DEFAULT_PROVIDER_URLS:
         base_url = DEFAULT_PROVIDER_URLS[provider]
     else:
         setting = session.get(Setting, "ai_base_url")
-        base_url = setting.value if setting else "http://localhost:11434/v1"
+        base_url = setting.value if setting else "http://localhost:1234/v1"
     
-    # Method 1: AsyncOpenAI client
+    # Method 1: AsyncOpenAI client for LM Studio / vLLM / Custom
     try:
         client = AsyncOpenAI(
             base_url=base_url,
@@ -44,21 +54,10 @@ async def get_models(
     except Exception:
         pass
 
-    # Method 2: Fallback direct HTTP requests if OpenAI client returned no models
+    # Method 2: Fallback direct HTTP requests
     if not models:
         async with httpx.AsyncClient(timeout=3.0) as http_client:
-            if provider == "ollama":
-                try:
-                    res = await http_client.get("http://localhost:11434/api/tags")
-                    if res.status_code == 200:
-                        data = res.json()
-                        for m in data.get("models", []):
-                            m_name = m.get("name")
-                            if m_name:
-                                models.append({"id": m_name, "name": m_name})
-                except Exception:
-                    pass
-            elif provider == "lmstudio":
+            if provider == "lmstudio":
                 try:
                     res = await http_client.get("http://localhost:1234/v1/models")
                     if res.status_code == 200:
@@ -81,33 +80,32 @@ async def get_models(
                 except Exception:
                     pass
                     
-    return models
+    return models or GEMINI_MODELS
 
 @router.get("/health")
-async def check_services_health():
-    """Pings local provider endpoints cleanly and returns status."""
+async def check_services_health(session: Session = Depends(get_session)):
+    """Pings provider endpoints and returns status."""
+    g_key = os.environ.get("GEMINI_API_KEY")
+    if not g_key:
+        setting = session.get(Setting, "gemini_api_key")
+        g_key = setting.value if setting else None
+
     async with httpx.AsyncClient(timeout=1.5) as http_client:
         results = {
             "backend": "running",
             "sqlite": "running",
-            "ollama": "stopped",
+            "gemini": "configured" if g_key and len(g_key.strip()) > 5 else "key_required",
             "lmstudio": "stopped",
             "vllm": "stopped",
         }
-        
-        # Check Ollama
-        try:
-            res = await http_client.get("http://localhost:11434/api/tags")
-            if res.status_code == 200:
-                results["ollama"] = "running"
-        except Exception:
-            pass
 
         # Check LM Studio
         try:
             res = await http_client.get("http://localhost:1234/v1/models")
             if res.status_code == 200:
                 results["lmstudio"] = "running"
+        except Exception:
+            pass
         except Exception:
             pass
 

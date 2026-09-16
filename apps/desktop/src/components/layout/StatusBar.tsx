@@ -3,7 +3,7 @@ import { ShieldCheck, Database, Cpu, Activity, Server } from 'lucide-react';
 
 interface ServiceStatus {
   backend: boolean;
-  ollama: boolean;
+  gemini: boolean;
   lmstudio: boolean;
   database: boolean;
 }
@@ -11,7 +11,7 @@ interface ServiceStatus {
 export function StatusBar() {
   const [status, setStatus] = useState<ServiceStatus>({
     backend: true,
-    ollama: false,
+    gemini: true,
     lmstudio: false,
     database: true,
   });
@@ -21,36 +21,25 @@ export function StatusBar() {
   useEffect(() => {
     const checkServices = async () => {
       let isBackendOk = false;
-      let isOllamaOk = false;
+      let isGeminiOk = false;
       let isLmsOk = false;
 
-      // 1. Check Backend
+      // 1. Check Backend & Gemini Health
       try {
-        const res = await fetch(`${API_URL}/`);
-        if (res.ok) isBackendOk = true;
+        const res = await fetch(`${API_URL}/ai/health`);
+        if (res.ok) {
+          const data = await res.json();
+          isBackendOk = data.backend === "running";
+          isGeminiOk = data.gemini === "configured";
+          isLmsOk = data.lmstudio === "running";
+        }
       } catch (e) {
         isBackendOk = false;
       }
 
-      // 2. Check Ollama directly at http://localhost:11434/
-      try {
-        const oRes = await fetch("http://localhost:11434/v1/models");
-        if (oRes.ok || oRes.status === 200 || oRes.status === 401) isOllamaOk = true;
-      } catch (e) {
-        isOllamaOk = false;
-      }
-
-      // 3. Check LM Studio directly at http://localhost:1234/v1
-      try {
-        const lRes = await fetch("http://localhost:1234/v1/models");
-        if (lRes.ok || lRes.status === 200) isLmsOk = true;
-      } catch (e) {
-        isLmsOk = false;
-      }
-
       setStatus({
         backend: isBackendOk,
-        ollama: isOllamaOk,
+        gemini: isGeminiOk,
         lmstudio: isLmsOk,
         database: isBackendOk,
       });
@@ -65,7 +54,7 @@ export function StatusBar() {
     <div className="h-9 flex items-center justify-between px-4 glass-panel-3d text-[11px] text-muted-foreground select-none shrink-0 border-t border-white/10 z-30">
       <div className="flex items-center gap-2">
         <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-        <span className="font-semibold text-foreground/90 hidden sm:inline">Local AI Engine &bull; Private & Offline</span>
+        <span className="font-semibold text-foreground/90 hidden sm:inline">Google Gemini AI &bull; Autonomous Linux Assistant</span>
       </div>
 
       {/* Services Status Headings */}
@@ -80,13 +69,13 @@ export function StatusBar() {
           </span>
         </div>
 
-        {/* Ollama Status */}
-        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 shrink-0" title="Ollama Service (Port 11434)">
+        {/* Gemini Status */}
+        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 shrink-0" title="Google Gemini API Key">
           <Cpu className="w-3 h-3 text-muted-foreground" />
-          <span className="font-bold text-foreground/90">Ollama:</span>
-          <span className={`w-2 h-2 rounded-full ${status.ollama ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-white/20'}`} />
-          <span className={status.ollama ? 'text-emerald-400 font-semibold' : 'text-muted-foreground/60'}>
-            {status.ollama ? 'Running' : 'Stopped'}
+          <span className="font-bold text-foreground/90">Gemini:</span>
+          <span className={`w-2 h-2 rounded-full ${status.gemini ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]'}`} />
+          <span className={status.gemini ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+            {status.gemini ? 'Configured' : 'Key Needed'}
           </span>
         </div>
 

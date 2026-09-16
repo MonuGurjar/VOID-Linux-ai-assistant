@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-export type ProviderType = "ollama" | "lmstudio" | "vllm" | "custom";
+export type ProviderType = "gemini" | "lmstudio" | "vllm" | "custom";
 
 export interface ModelOption {
   id: string;
@@ -8,9 +8,16 @@ export interface ModelOption {
   provider: ProviderType;
 }
 
-let globalProvider: ProviderType = (localStorage.getItem("void_provider") as ProviderType) || "ollama";
-let globalSelectedModel: string = localStorage.getItem("void_selected_model") || "";
-let globalModels: ModelOption[] = [];
+const DEFAULT_GEMINI_MODELS: ModelOption[] = [
+  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", provider: "gemini" },
+  { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", provider: "gemini" },
+  { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", provider: "gemini" },
+  { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", provider: "gemini" },
+];
+
+let globalProvider: ProviderType = (localStorage.getItem("void_provider") as ProviderType) || "gemini";
+let globalSelectedModel: string = localStorage.getItem("void_selected_model") || "gemini-2.5-flash";
+let globalModels: ModelOption[] = DEFAULT_GEMINI_MODELS;
 const listeners = new Set<() => void>();
 
 function notify() {
@@ -19,16 +26,8 @@ function notify() {
 
 async function fetchDirectProviderModels(prov: ProviderType): Promise<ModelOption[]> {
   try {
-    if (prov === "ollama") {
-      const res = await fetch("http://localhost:11434/api/tags");
-      if (res.ok) {
-        const data = await res.json();
-        return (data.models || []).map((m: any) => ({
-          id: m.name,
-          name: m.name,
-          provider: "ollama" as const,
-        }));
-      }
+    if (prov === "gemini") {
+      return DEFAULT_GEMINI_MODELS;
     } else if (prov === "lmstudio") {
       const res = await fetch("http://localhost:1234/v1/models");
       if (res.ok) {
@@ -53,7 +52,7 @@ async function fetchDirectProviderModels(prov: ProviderType): Promise<ModelOptio
   } catch (e) {
     console.warn(`Direct client-side fallback failed for ${prov}:`, e);
   }
-  return [];
+  return prov === "gemini" ? DEFAULT_GEMINI_MODELS : [];
 }
 
 export function useModelSelection() {

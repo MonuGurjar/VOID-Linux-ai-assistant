@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/conversations/{conversation_id}/messages", tags=["chat"])
 
 DEFAULT_PROVIDER_URLS = {
-    "ollama": "http://localhost:11434/v1",
+    "gemini": "https://generativelanguage.googleapis.com/v1beta/openai/",
     "lmstudio": "http://localhost:1234/v1",
     "vllm": "http://localhost:8080/v1",
 }
@@ -307,15 +307,15 @@ async def post_message(conversation_id: int, message: Message, session: Session 
             )
         except Exception as e:
             logger.warning(f"Failed to auto-execute system OS query: {e}")
-
-    # Dynamic Folder & Filesystem Requests (Pictures, Downloads, Documents, Desktop, Music, Videos, etc.)
+    # A. Directory File Listing Telemetry
     dir_keywords = {
-        "picture": "~/Pictures",
-        "photo": "~/Pictures",
-        "image": "~/Pictures",
+        "downloads": "~/Downloads",
         "download": "~/Downloads",
+        "documents": "~/Documents",
         "document": "~/Documents",
         "desktop": "~/Desktop",
+        "pictures": "~/Pictures",
+        "picture": "~/Pictures",
         "music": "~/Music",
         "video": "~/Videos",
         "home": "~",
@@ -343,7 +343,7 @@ async def post_message(conversation_id: int, message: Message, session: Session 
                 f"\n\n[LIVE BASH EXECUTED TELEMETRY — `ls -lh {full_path}`]\n"
                 f"Directory Path: {full_path}\n"
                 f"Directory File Listing:\n```text\n{ls_out[:1500]}\n```\n\n"
-                f"CRITICAL SYSTEM DIRECTIVE: The user asked to summarize/list files in '{full_path}'. Summarize these actual real files (PDFs, GGUF models, Zip archives, Images) directly in your answer!"
+                f"CRITICAL SYSTEM DIRECTIVE: The user asked to summarize/list files in '{full_path}'. Summarize these actual real files directly in your answer!"
             )
         except Exception as e:
             logger.warning(f"Failed to auto-fetch filesystem for {target_path}: {e}")
@@ -353,15 +353,14 @@ async def post_message(conversation_id: int, message: Message, session: Session 
         try:
             from ..tools.builtin import SystemInfoTool
             sys_data = await SystemInfoTool().execute()
-            hw_res = await execute_bash_command("inxi -b 2>&1")
+            hw_res = await execute_bash_command("inxi -b -c 0 2>&1")
             hw_text = (hw_res.get("stdout") or "").strip()
             
             tool_context_suffix += (
                 f"\n\n[LIVE LINUX SYSTEM HARDWARE TELEMETRY — `inxi -b` EXECUTED]\n"
                 f"Executable Command: `inxi -b`\n"
                 f"Command Result:\n```text\n{hw_text}\n```\n\n"
-                f"CRITICAL SYSTEM DIRECTIVE: The exact output above is the user's real hardware (`Acer Nitro ANV15-51`, `13th Gen Intel Core i5-13420H`, `NVIDIA GeForce RTX 4050 Laptop GPU`, `16 GB RAM`). "
-                f"DO NOT output fake specs like 'i7-12700K' or 'RTX 3080'. State the real specs from `inxi -b` above!"
+                f"CRITICAL SYSTEM DIRECTIVE: State the real specs from `inxi -b` above!"
             )
         except Exception as e:
             logger.warning(f"Failed to auto-fetch system telemetry: {e}")
@@ -378,89 +377,47 @@ async def post_message(conversation_id: int, message: Message, session: Session 
     async def generate_response():
         full_thinking = ""
         full_response = ""
-        
-        # Method A: Ollama Native Streaming API with structured thinking payload & 64k context
-        if req_provider == "ollama":
-            try:
-                async with httpx.AsyncClient(timeout=300.0) as http_client:
-                    async with http_client.stream(
-                        "POST",
-                        "http://localhost:11434/api/chat",
-                        json={
-                            "model": model_name,
-                            "messages": ai_messages,
-                            "options": {
-                                "num_ctx": 65536,
-                                "repeat_penalty": 1.2,
-                                "stop": ["bus_master_pci_64bit_64bit"]
-                            },
-                            "stream": True
-                        }
-                    ) as response:
-                        if response.status_code != 200:
-                            err_text = await response.aread()
-                            raise Exception(f"Ollama error ({response.status_code}): {err_text.decode('utf-8', errors='ignore')}")
+        model_name = req_model or "gemini-2.5-flash"
 
-                        async for line in response.aiter_lines():
-                            if not line or not line.strip():
-                                continue
-                            try:
-                                data = json.loads(line)
-                                msg = data.get("message", {})
-                                thinking_piece = msg.get("thinking", "")
-                                content_piece = msg.get("content", "")
-
-                                if thinking_piece:
-                                    full_thinking += thinking_piece
-                                    yield f"data: {json.dumps({'thinking': thinking_piece})}\n\n"
-                                elif content_piece:
-                                    clean_piece = sanitize_hallucinated_tokens(content_piece)
-                                    full_response += clean_piece
-                                    yield f"data: {json.dumps({'content': clean_piece})}\n\n"
-
-                                if data.get("done", False):
-                                    break
-                            except Exception:
-                                continue
-            except Exception as e:
-                logger.error(f"Ollama native stream error: {e}")
-                yield f"data: {json.dumps({'error': str(e)})}\n\n"
-            finally:
-                # Intercept & Execute any JSON tool calls emitted by LLM
-                tool_output_formatted, _ = await parse_and_execute_tool_calls(full_response + "\n" + full_thinking)
-                if tool_output_formatted:
-                    full_response += tool_output_formatted
-                    yield f"data: {json.dumps({'content': tool_output_formatted})}\n\n"
-
+        # Determine API base URL and API Key based on provider
+        if req_provider == "gemini" or not req_provider:
+            if not gemini_key or len(gemini_key.strip()) < 5:
+                missing_key_msg = (
+                    "⚠️ **Google Gemini API Key Required**\n\n"
+                    "Please enter your **Google Gemini API Key** in **Settings ⚙️ -> Google Gemini API Key** to start chatting with Gemini models.\n\n"
+                    "👉 Get a free key at [Google AI Studio](https://aistudio.google.com/)."
+                )
+                yield f"data: {json.dumps({'content': missing_key_msg})}\n\n"
                 yield "data: [DONE]\n\n"
-                
-                final_saved_content = f"<think>\n{full_thinking.strip()}\n</think>\n\n{full_response.strip()}" if full_thinking.strip() else full_response.strip()
-                if final_saved_content and final_saved_content.strip():
-                    with Session(engine) as db_session:
-                        assistant_msg = Message(
-                            conversation_id=conversation_id,
-                            role="assistant",
-                            content=final_saved_content.strip(),
-                            model=model_name,
-                            provider=req_provider
-                        )
-                        db_session.add(assistant_msg)
-                        db_session.commit()
-            return
+                with Session(engine) as db_session:
+                    assistant_msg = Message(
+                        conversation_id=conversation_id,
+                        role="assistant",
+                        content=missing_key_msg,
+                        model=model_name,
+                        provider="gemini"
+                    )
+                    db_session.add(assistant_msg)
+                    db_session.commit()
+                return
 
-        # Method B: OpenAI SDK for LM Studio, vLLM, Custom
-        if req_provider in DEFAULT_PROVIDER_URLS:
-            base_url = DEFAULT_PROVIDER_URLS[req_provider]
+            base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
+            api_key = gemini_key.strip()
         elif req_provider == "custom":
             url_setting = session.get(Setting, "ai_custom_url")
             base_url = url_setting.value if url_setting else "http://localhost:8080/v1"
+            api_key = "local-ai"
+        elif req_provider in DEFAULT_PROVIDER_URLS:
+            base_url = DEFAULT_PROVIDER_URLS[req_provider]
+            api_key = "local-ai"
         else:
             url_setting = session.get(Setting, "ai_base_url")
-            base_url = url_setting.value if url_setting else "http://localhost:11434/v1"
+            base_url = url_setting.value if url_setting else "https://generativelanguage.googleapis.com/v1beta/openai/"
+            api_key = gemini_key.strip() if gemini_key else "local-ai"
 
         client = AsyncOpenAI(
             base_url=base_url,
-            api_key="local-ai",
+            api_key=api_key,
             timeout=300.0
         )
 
@@ -468,10 +425,6 @@ async def post_message(conversation_id: int, message: Message, session: Session 
             stream = await client.chat.completions.create(
                 model=model_name,
                 messages=ai_messages,
-                extra_body={
-                    "num_ctx": 65536,
-                    "n_ctx": 65536
-                },
                 stream=True
             )
             
@@ -485,20 +438,21 @@ async def post_message(conversation_id: int, message: Message, session: Session 
                         full_thinking += thinking_piece
                         yield f"data: {json.dumps({'thinking': thinking_piece})}\n\n"
                     elif content_piece:
-                        full_response += content_piece
-                        yield f"data: {json.dumps({'content': content_piece})}\n\n"
-                    
+                        clean_piece = sanitize_hallucinated_tokens(content_piece)
+                        full_response += clean_piece
+                        yield f"data: {json.dumps({'content': clean_piece})}\n\n"
         except Exception as e:
-            logger.error(f"Error in LLM stream generation: {e}")
+            logger.error(f"Stream error for provider {req_provider}: {e}")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
         finally:
-            # Intercept & Execute any JSON tool calls emitted by LLM
+            # Intercept & Execute any JSON tool calls or bash code blocks emitted by LLM
             tool_output_formatted, _ = await parse_and_execute_tool_calls(full_response + "\n" + full_thinking)
             if tool_output_formatted:
                 full_response += tool_output_formatted
                 yield f"data: {json.dumps({'content': tool_output_formatted})}\n\n"
 
             yield "data: [DONE]\n\n"
+            
             final_saved_content = f"<think>\n{full_thinking.strip()}\n</think>\n\n{full_response.strip()}" if full_thinking.strip() else full_response.strip()
             if final_saved_content and final_saved_content.strip():
                 with Session(engine) as db_session:
@@ -510,4 +464,6 @@ async def post_message(conversation_id: int, message: Message, session: Session 
                         provider=req_provider
                     )
                     db_session.add(assistant_msg)
+                    db_session.commit()
+
     return StreamingResponse(generate_response(), media_type="text/event-stream")

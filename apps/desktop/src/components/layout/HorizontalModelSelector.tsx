@@ -5,7 +5,7 @@ export function HorizontalModelSelector() {
   const { provider, setProvider, selectedModel, setSelectedModel, models } = useModelSelection();
 
   const providers: { id: ProviderType; label: string }[] = [
-    { id: "ollama", label: "Ollama" },
+    { id: "gemini", label: "Google Gemini" },
     { id: "lmstudio", label: "LM Studio" },
     { id: "vllm", label: "vLLM" },
   ];

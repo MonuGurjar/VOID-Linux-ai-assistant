@@ -9,14 +9,14 @@ export function SlimModelSelector() {
       {/* Top Provider Toggle */}
       <div className="flex items-center justify-between gap-1 bg-black/40 p-0.5 rounded-lg">
         <button
-          onClick={() => setProvider("ollama")}
+          onClick={() => setProvider("gemini")}
           className={`flex-1 py-1 text-[10px] font-bold rounded-md transition-all ${
-            provider === "ollama"
+            provider === "gemini"
               ? "btn-3d-primary text-white shadow-sm"
               : "text-muted-foreground hover:text-white"
           }`}
         >
-          Ollama
+          Gemini
         </button>
         <button
           onClick={() => setProvider("lmstudio")}
